@@ -73,14 +73,8 @@
     <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#aulas-tab">
         <i class="bi bi-play-circle me-1"></i>Aulas (@a.Aulas.Count)
     </button></li>
-    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tarefas-tab">
-        <i class="bi bi-check2-square me-1"></i>Tarefas (@a.Tarefas.Count)
-    </button></li>
     <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#insights-tab">
         <i class="bi bi-lightbulb me-1"></i>Insights (@a.Insights.Count)
-    </button></li>
-    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#duvidas-tab">
-        <i class="bi bi-question-circle me-1"></i>Dúvidas (@a.Duvidas.Count)
     </button></li>
 </ul>
 
@@ -193,53 +187,6 @@
     </div>
 
     <!-- Tarefas -->
-    <div class="tab-pane fade" id="tarefas-tab">
-        <div class="card">
-            <div class="card-body">
-                @if (a.Tarefas.Any())
-                {
-                    <div class="table-responsive mb-3">
-                        <table class="table table-sm align-middle">
-                            <thead><tr><th>Título</th><th>Prazo</th><th>Status</th><th></th></tr></thead>
-                            <tbody>
-                                @foreach (var t in a.Tarefas)
-                                {
-                                    var atrasada = t.Status != StatusTarefa.Concluida && t.DataHoraLimite < DateTime.Now;
-                                    <tr>
-                                        <td>@t.Titulo</td>
-                                        <td class="@(atrasada ? "text-danger fw-bold" : "small")">@t.DataHoraLimite.ToString("dd/MM/yy HH:mm")</td>
-                                        <td><span class="badge bg-@DiasHelper.ClasseStatus(t.Status)">@DiasHelper.LabelStatus(t.Status)</span></td>
-                                        <td>
-                                            <a asp-page="/Artigos/Tarefas/Edit" asp-route-id="@t.Id"
-                                               class="btn btn-sm btn-outline-secondary">
-                                                <i class="bi bi-pencil"></i>
-                                            </a>
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                }
-                <hr />
-                <h6 class="section-title">Adicionar tarefa</h6>
-                <form method="post" asp-page-handler="AddTarefa" asp-route-id="@a.Id">
-                    <div class="row g-2">
-                        <div class="col-md-5">
-                            <input asp-for="NovaTarefa.Titulo" class="form-control form-control-sm" placeholder="Título da tarefa" />
-                        </div>
-                        <div class="col-md-4">
-                            <input asp-for="NovaTarefa.DataHoraLimite" class="form-control form-control-sm" type="datetime-local" />
-                        </div>
-                        <div class="col-md-3">
-                            <button type="submit" class="btn btn-sm btn-primary w-100">Adicionar</button>
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
     <!-- Insights -->
     <div class="tab-pane fade" id="insights-tab">
         <div class="card">
@@ -277,55 +224,5 @@
         </div>
     </div>
 
-    <!-- Dúvidas -->
-    <div class="tab-pane fade" id="duvidas-tab">
-        <div class="card">
-            <div class="card-body">
-                @{
-                    var duv_abertas = a.Duvidas.Where(d => !d.Resolvida).ToList();
-                    var duv_resolvidas = a.Duvidas.Where(d => d.Resolvida).ToList();
-                }
-                @if (duv_abertas.Any())
-                {
-                    <h6 class="section-title">Em aberto</h6>
-                    @foreach (var d in duv_abertas)
-                    {
-                        <div class="card border-warning mb-2">
-                            <div class="card-body py-2 px-3">
-                                <p class="mb-1 small fw-semibold">@d.Descricao</p>
-                                <small class="text-muted">@d.DataRegistro.ToString("dd/MM/yyyy")</small>
-                                <form method="post" asp-page-handler="ResolverDuvida" asp-route-id="@a.Id" asp-route-duvidaId="@d.Id" class="mt-2 d-flex gap-2">
-                                    <input name="resolucao" class="form-control form-control-sm" placeholder="Resolução..." />
-                                    <button class="btn btn-sm btn-success text-nowrap">Resolver</button>
-                                </form>
-                            </div>
-                        </div>
-                    }
-                }
-                @if (duv_resolvidas.Any())
-                {
-                    <h6 class="section-title mt-3">Resolvidas</h6>
-                    @foreach (var d in duv_resolvidas)
-                    {
-                        <div class="card border-success border-opacity-25 mb-2">
-                            <div class="card-body py-2 px-3">
-                                <p class="mb-0 small text-decoration-line-through text-muted">@d.Descricao</p>
-                                @if (d.Resolucao != null) { <p class="mb-0 small text-success"><i class="bi bi-check me-1"></i>@d.Resolucao</p> }
-                            </div>
-                        </div>
-                    }
-                }
-                <hr />
-                <h6 class="section-title">Registrar dúvida</h6>
-                <form method="post" asp-page-handler="AddDuvida" asp-route-id="@a.Id">
-                    <div class="d-flex gap-2">
-                        <textarea asp-for="NovaDuvida.Descricao" class="form-control form-control-sm" rows="2"
-                                  placeholder="Descreva a dúvida..."></textarea>
-                        <button type="submit" class="btn btn-sm btn-primary align-self-end">Registrar</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
 
 </div>

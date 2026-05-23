@@ -1,0 +1,353 @@
+@page
+@model CadernoVivo.Pages.LinhaDoTempo.IndexModel
+@using CadernoVivo.Helpers
+@using CadernoVivo.Models
+@{
+    ViewData["Title"] = "Linha do Tempo";
+}
+
+@functions {
+    private static int DuracaoMinutos(BlocoEstudo bloco)
+    {
+        if (!TimeSpan.TryParse(bloco.HoraInicio, out var inicio) ||
+            !TimeSpan.TryParse(bloco.HoraFim, out var fim))
+            return 50;
+
+        var duracao = fim - inicio;
+        return duracao.TotalMinutes > 0 ? (int)Math.Round(duracao.TotalMinutes) : 50;
+    }
+}
+
+@section Breadcrumb {
+    <li class="breadcrumb-item active">Linha do Tempo</li>
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h4 class="fw-bold mb-1"><i class="bi bi-clock-history text-primary me-2"></i>Linha do Tempo</h4>
+        <small class="text-muted">Histórico diário, atrasos e próximos estudos em uma linha só.</small>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-page="./Index" asp-route-data="@Model.DiaSelecionado.AddDays(-1).ToString("yyyy-MM-dd")"
+           class="btn btn-outline-secondary">
+            <i class="bi bi-chevron-left"></i>Dia anterior
+        </a>
+        <a asp-page="./Index" asp-route-data="@DateTime.Today.ToString("yyyy-MM-dd")"
+           class="btn btn-primary">
+            Hoje
+        </a>
+        <a asp-page="./Index" asp-route-data="@Model.DiaSelecionado.AddDays(1).ToString("yyyy-MM-dd")"
+           class="btn btn-outline-secondary">
+            Próximo dia<i class="bi bi-chevron-right"></i>
+        </a>
+    </div>
+</div>
+
+<div class="timeline-strip mb-4">
+    @foreach (var dia in Model.Dias)
+    {
+        var selected = dia.Data == Model.DiaSelecionado;
+        var isToday = dia.Data == DateTime.Today;
+        var stateClass = dia.Atrasado
+            ? "danger"
+            : dia.Total == 0
+                ? "empty"
+                : dia.Pendentes == 0
+                    ? "done"
+                    : dia.Data > DateTime.Today
+                        ? "future"
+                        : "open";
+
+        <a asp-page="./Index" asp-route-data="@dia.Data.ToString("yyyy-MM-dd")"
+           class="timeline-day @stateClass @(selected ? "selected" : "") text-decoration-none">
+            <span class="dow">@DiasHelper.NomeDia((int)dia.Data.DayOfWeek).Substring(0, 3)</span>
+            <strong>@dia.Data.ToString("dd/MM")</strong>
+            @if (isToday)
+            {
+                <span class="today-dot">Hoje</span>
+            }
+            else if (dia.Total > 0)
+            {
+                <span class="count">@dia.Concluidos/@dia.Total</span>
+            }
+            else
+            {
+                <span class="count">Livre</span>
+            }
+        </a>
+    }
+</div>
+
+<div class="timeline-detail">
+    <div class="day-panel">
+        <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
+            <div>
+                <div class="dash-eyebrow">@DiasHelper.NomeDia((int)Model.DiaSelecionado.DayOfWeek)</div>
+                <h4 class="fw-bold mb-1">@Model.DiaSelecionado.ToString("dd/MM/yyyy")</h4>
+                <div class="dash-muted small">
+                    @Model.ConcluidosDia de @Model.TotalDia bloco(s) concluído(s)
+                    @if (Model.MinutosDia > 0)
+                    {
+                        <span> · @Model.MinutosDia min planejados</span>
+                    }
+                </div>
+            </div>
+            <div class="day-score @(Model.AtrasadosDia > 0 ? "danger" : "ok")">
+                <strong>@Model.ProgressoDia%</strong>
+                <span>progresso</span>
+            </div>
+        </div>
+
+        <div class="progress mb-3" style="height: 8px">
+            <div class="progress-bar" style="width:@Model.ProgressoDia%"></div>
+        </div>
+
+        @if (!Model.BlocosDia.Any())
+        {
+            <div class="empty-panel">
+                <i class="bi bi-calendar2"></i>
+                <span>Nenhum bloco neste dia.</span>
+            </div>
+        }
+        else
+        {
+            <div class="day-block-list">
+                @foreach (var bloco in Model.BlocosDia)
+                {
+                    var atrasado = Model.DiaSelecionado < DateTime.Today &&
+                                   bloco.Status != StatusBloco.Concluido &&
+                                   bloco.Status != StatusBloco.NaoFeito;
+                    var collapseId = $"blocoDetalhe{bloco.Id}";
+                    var duracao = DuracaoMinutos(bloco);
+                    <div class="day-block interactive @(atrasado ? "late" : "")">
+                        <button class="day-block-trigger" type="button"
+                                data-bs-toggle="collapse" data-bs-target="#@collapseId"
+                                aria-expanded="false" aria-controls="@collapseId">
+                            <div class="block-time">
+                                <strong>@bloco.HoraInicio</strong>
+                                <span>@bloco.HoraFim</span>
+                            </div>
+                            <div class="block-content">
+                                <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap">
+                                    <div>
+                                        <div class="fw-bold">@bloco.Titulo</div>
+                                        @if (!string.IsNullOrWhiteSpace(bloco.Descricao))
+                                        {
+                                            <div class="text-muted small block-preview">@bloco.Descricao</div>
+                                        }
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        @if (atrasado)
+                                        {
+                                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle">
+                                                Atrasado
+                                            </span>
+                                        }
+                                        <span class="badge bg-@DiasHelper.ClasseStatusBloco(bloco.Status)">
+                                            @DiasHelper.LabelStatusBloco(bloco.Status)
+                                        </span>
+                                        <i class="bi bi-chevron-down text-muted"></i>
+                                    </div>
+                                </div>
+                                <div class="queue-meta">
+                                    @if (bloco.Materia != null)
+                                    {
+                                        <span><i class="bi bi-mortarboard"></i>@bloco.Materia.Nome</span>
+                                    }
+                                    @if (bloco.Artigo != null)
+                                    {
+                                        <span><i class="bi bi-journal-text"></i>@bloco.Artigo.Titulo</span>
+                                    }
+                                    @if (bloco.Projeto != null)
+                                    {
+                                        <span><i class="bi bi-kanban"></i>@bloco.Projeto.Titulo</span>
+                                    }
+                                </div>
+                            </div>
+                        </button>
+
+                        <div class="collapse" id="@collapseId">
+                            <div class="timeline-action-panel">
+                                <div class="activity-focus">
+                                    <div class="dash-eyebrow">O que fazer agora</div>
+                                    <h5>@bloco.Titulo</h5>
+                                    @if (!string.IsNullOrWhiteSpace(bloco.Descricao))
+                                    {
+                                        <p>@bloco.Descricao</p>
+                                    }
+                                    else
+                                    {
+                                        <p>Sem descrição cadastrada. Use este painel para remarcar, executar ou registrar o resultado.</p>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(bloco.Observacao))
+                                    {
+                                        <div class="activity-note">
+                                            <i class="bi bi-sticky"></i>@bloco.Observacao
+                                        </div>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(bloco.OndeParei) ||
+                                         !string.IsNullOrWhiteSpace(bloco.ProximoPasso) ||
+                                         !string.IsNullOrWhiteSpace(bloco.Duvidas))
+                                    {
+                                        <div class="activity-notes-stack">
+                                            @if (!string.IsNullOrWhiteSpace(bloco.OndeParei))
+                                            {
+                                                <div><strong>Onde parei:</strong> @bloco.OndeParei</div>
+                                            }
+                                            @if (!string.IsNullOrWhiteSpace(bloco.ProximoPasso))
+                                            {
+                                                <div><strong>Próximo passo:</strong> @bloco.ProximoPasso</div>
+                                            }
+                                            @if (!string.IsNullOrWhiteSpace(bloco.Duvidas))
+                                            {
+                                                <div><strong>Observações:</strong> @bloco.Duvidas</div>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+
+                                <div class="timeline-actions-grid">
+                                    <div class="run-card">
+                                        <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                                            <div>
+                                                <div class="dash-eyebrow">Executar daqui mesmo</div>
+                                                <strong>Contador de @duracao min</strong>
+                                            </div>
+                                            <span class="timer-pill" data-timer-display="@bloco.Id">@duracao:00</span>
+                                        </div>
+                                        <div class="d-flex gap-2 flex-wrap">
+                                            <button class="btn btn-primary btn-sm" type="button"
+                                                    data-start-timeline-timer="@bloco.Id"
+                                                    data-minutes="@duracao">
+                                                <i class="bi bi-play-fill"></i>Começar contador
+                                            </button>
+                                            <form method="post" asp-page-handler="AtualizarStatus">
+                                                <input type="hidden" name="id" value="@bloco.Id" />
+                                                <input type="hidden" name="status" value="@StatusBloco.Concluido" />
+                                                <button class="btn btn-success btn-sm" type="submit">
+                                                    <i class="bi bi-check2"></i>Concluir
+                                                </button>
+                                            </form>
+                                            <form method="post" asp-page-handler="AtualizarStatus">
+                                                <input type="hidden" name="id" value="@bloco.Id" />
+                                                <input type="hidden" name="status" value="@StatusBloco.Parcial" />
+                                                <button class="btn btn-outline-warning btn-sm" type="submit">
+                                                    Parcial
+                                                </button>
+                                            </form>
+                                        </div>
+                                        <small class="text-muted d-block mt-2">
+                                            Bom para atraso: você executa agora, finaliza e o histórico registra que foi feito fora do prazo.
+                                        </small>
+                                    </div>
+
+                                    <form method="post" asp-page-handler="RemarcarBloco" class="reschedule-card">
+                                        <input type="hidden" name="id" value="@bloco.Id" />
+                                        <div class="dash-eyebrow mb-2">Remarcar flexível</div>
+                                        <div class="row g-2">
+                                            <div class="col-md-4">
+                                                <label class="form-label small">Nova data</label>
+                                                <input type="text" name="data" class="form-control form-control-sm"
+                                                       value="@DateTime.Today.ToString("dd/MM/yyyy")"
+                                                       placeholder="dd/mm/aaaa" inputmode="numeric" data-br-date />
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label small">Início</label>
+                                                <input type="text" name="horaInicio" class="form-control form-control-sm"
+                                                       value="@bloco.HoraInicio" placeholder="19:30"
+                                                       inputmode="numeric" data-br-time />
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label small">Fim</label>
+                                                <input type="text" name="horaFim" class="form-control form-control-sm"
+                                                       value="@bloco.HoraFim" placeholder="21:00"
+                                                       inputmode="numeric" data-br-time />
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label small">Observação rápida</label>
+                                                <input type="text" name="observacao" class="form-control form-control-sm"
+                                                       placeholder="Ex.: joguei para sábado porque fiquei sem tempo" />
+                                            </div>
+                                        </div>
+                                        <div class="d-flex gap-2 flex-wrap mt-3">
+                                            <button class="btn btn-outline-primary btn-sm" type="submit">
+                                                <i class="bi bi-calendar2-check"></i>Salvar remarcação
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+
+                                @if (atrasado)
+                                {
+                                    <div class="quick-late-row">
+                                        <span>Atalhos para atraso:</span>
+                                        <form method="post" asp-page-handler="AdiarBloco">
+                                            <input type="hidden" name="id" value="@bloco.Id" />
+                                            <input type="hidden" name="destino" value="amanha" />
+                                            <button class="btn btn-sm btn-outline-primary" type="submit">Amanhã</button>
+                                        </form>
+                                        <form method="post" asp-page-handler="AdiarBloco">
+                                            <input type="hidden" name="id" value="@bloco.Id" />
+                                            <input type="hidden" name="destino" value="sabado" />
+                                            <button class="btn btn-sm btn-outline-secondary" type="submit">Sábado</button>
+                                        </form>
+                                        <form method="post" asp-page-handler="MarcarNaoFeito"
+                                              onsubmit="return confirm('Marcar este bloco como não feito?')">
+                                            <input type="hidden" name="id" value="@bloco.Id" />
+                                            <button class="btn btn-sm btn-outline-danger" type="submit">Não feito</button>
+                                        </form>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (() => {
+            const timers = new Map();
+
+            function format(seconds) {
+                const minutes = Math.floor(seconds / 60).toString().padStart(2, '0');
+                const rest = Math.floor(seconds % 60).toString().padStart(2, '0');
+                return `${minutes}:${rest}`;
+            }
+
+            document.querySelectorAll('[data-start-timeline-timer]').forEach((button) => {
+                button.addEventListener('click', () => {
+                    const id = button.dataset.startTimelineTimer;
+                    const display = document.querySelector(`[data-timer-display="${id}"]`);
+                    const minutes = Number(button.dataset.minutes || 50);
+                    let remaining = Math.max(1, minutes) * 60;
+
+                    if (timers.has(id)) clearInterval(timers.get(id));
+                    if (display) display.textContent = format(remaining);
+
+                    button.classList.remove('btn-primary');
+                    button.classList.add('btn-success');
+                    button.innerHTML = '<i class="bi bi-hourglass-split"></i>Rodando';
+
+                    const interval = setInterval(() => {
+                        remaining -= 1;
+                        if (display) display.textContent = format(Math.max(0, remaining));
+
+                        if (remaining <= 0) {
+                            clearInterval(interval);
+                            timers.delete(id);
+                            button.classList.remove('btn-success');
+                            button.classList.add('btn-primary');
+                            button.innerHTML = '<i class="bi bi-play-fill"></i>Começar contador';
+                        }
+                    }, 1000);
+
+                    timers.set(id, interval);
+                });
+            });
+        })();
+    </script>
+}

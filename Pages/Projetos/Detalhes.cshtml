@@ -1,0 +1,255 @@
+@page "{id:int}"
+@model CadernoVivo.Pages.Projetos.DetalhesModel
+@using CadernoVivo.Helpers
+@using CadernoVivo.Models
+@{
+    ViewData["Title"] = Model.Projeto.Titulo;
+    var p = Model.Projeto;
+    var dias = p.DiasRestantes;
+    var checklist = p.Checklist;
+    var feitos = checklist.Count(c => c.Feito);
+    var progresso = checklist.Count > 0 ? (int)((double)feitos / checklist.Count * 100) : 0;
+}
+
+@section Breadcrumb {
+    <li class="breadcrumb-item"><a asp-page="/Projetos/Index">Projetos</a></li>
+    <li class="breadcrumb-item active">@p.Titulo</li>
+}
+
+<div class="project-detail-hero mb-4">
+    <div>
+        <div class="dash-eyebrow">Central do projeto</div>
+        <h3>@p.Titulo</h3>
+        @if (!string.IsNullOrWhiteSpace(p.Descricao))
+        {
+            <p>@p.Descricao</p>
+        }
+        <div class="d-flex gap-2 flex-wrap">
+            <span class="badge bg-@DiasHelper.ClassePrioridade(p.Prioridade)">@DiasHelper.LabelPrioridade(p.Prioridade)</span>
+            <span class="badge bg-@DiasHelper.ClasseStatusProjeto(p.Status)">@DiasHelper.LabelStatusProjeto(p.Status)</span>
+            @if (p.DataLimite.HasValue)
+            {
+                <span class="badge bg-@DiasHelper.ClasseCountdown(dias)">
+                    <i class="bi bi-clock me-1"></i>@DiasHelper.LabelCountdown(dias) · @p.DataLimite.Value.ToString("dd/MM/yyyy")
+                </span>
+            }
+            @if (p.Materia != null)
+            {
+                <span class="badge bg-primary">@p.Materia.Nome</span>
+            }
+        </div>
+    </div>
+    <div class="project-hero-progress">
+        <strong>@progresso%</strong>
+        <span>@feitos/@checklist.Count checklist</span>
+        <a asp-page="/Projetos/Index" class="btn btn-outline-secondary btn-sm mt-3">
+            <i class="bi bi-arrow-left me-1"></i>Voltar
+        </a>
+    </div>
+</div>
+
+<div class="row g-3">
+
+    <!-- Checklist -->
+    <div class="col-lg-5">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-check2-square me-2"></i>Checklist</span>
+                @if (checklist.Count > 0)
+                {
+                    <span class="badge bg-primary">@feitos / @checklist.Count</span>
+                }
+            </div>
+            <div class="card-body">
+                @if (checklist.Count > 0)
+                {
+                    <div class="progress mb-3" style="height:6px">
+                        <div class="progress-bar @(progresso == 100 ? "bg-success" : "")" style="width:@progresso%"></div>
+                    </div>
+
+                    <ul class="list-unstyled mb-3">
+                        @for (int i = 0; i < checklist.Count; i++)
+                        {
+                            var item = checklist[i];
+                            <li class="d-flex align-items-center gap-2 py-1 border-bottom">
+                                <form method="post" asp-page-handler="ToggleItem" class="d-inline">
+                                    <input type="hidden" name="id" value="@p.Id" />
+                                    <input type="hidden" name="idx" value="@i" />
+                                    <button type="submit" class="btn btn-sm p-0 border-0 bg-transparent"
+                                            style="width:22px;height:22px;flex-shrink:0">
+                                        @if (item.Feito)
+                                        {
+                                            <i class="bi bi-check-circle-fill text-success fs-5"></i>
+                                        }
+                                        else
+                                        {
+                                            <i class="bi bi-circle text-muted fs-5"></i>
+                                        }
+                                    </button>
+                                </form>
+                                <span class="@(item.Feito ? "text-decoration-line-through text-muted" : "") small flex-grow-1">
+                                    @item.Texto
+                                </span>
+                                <form method="post" asp-page-handler="RemoveItem" class="d-inline">
+                                    <input type="hidden" name="id" value="@p.Id" />
+                                    <input type="hidden" name="idx" value="@i" />
+                                    <button type="submit" class="btn btn-sm p-0 border-0 bg-transparent text-muted">
+                                        <i class="bi bi-x"></i>
+                                    </button>
+                                </form>
+                            </li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <p class="text-muted small mb-3">Nenhum item no checklist ainda.</p>
+                }
+
+                <!-- Adicionar item rápido -->
+                <form method="post" asp-page-handler="AddItem" class="d-flex gap-2">
+                    <input type="hidden" name="id" value="@p.Id" />
+                    <input type="text" name="texto" class="form-control form-control-sm"
+                           placeholder="Adicionar item..." />
+                    <button type="submit" class="btn btn-sm btn-primary flex-shrink-0">
+                        <i class="bi bi-plus"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Editar + Observações -->
+    <div class="col-lg-7">
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header"><i class="bi bi-calendar-plus me-2"></i>Criar bloco de estudo para este projeto</div>
+            <div class="card-body">
+                <form method="post" asp-page-handler="AdicionarBloco">
+                    <input type="hidden" name="id" value="@p.Id" />
+                    <div class="row g-2">
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Data</label>
+                            <input type="text" name="data" class="form-control"
+                                   value="@DateTime.Today.ToString("dd/MM/yyyy")"
+                                   placeholder="dd/mm/aaaa" inputmode="numeric" data-br-date />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Início</label>
+                            <input type="text" name="horaInicio" class="form-control" value="19:30"
+                                   placeholder="19:30" inputmode="numeric" data-br-time />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Fim</label>
+                            <input type="text" name="horaFim" class="form-control" value="21:00"
+                                   placeholder="21:00" inputmode="numeric" data-br-time />
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label fw-semibold">Título</label>
+                            <input type="text" name="titulo" class="form-control" value="@p.Titulo" />
+                        </div>
+                        <div class="col-md-7">
+                            <label class="form-label fw-semibold">Objetivo do bloco</label>
+                            <input type="text" name="descricao" class="form-control"
+                                   placeholder="Ex.: avançar checklist, resolver parte prática, revisar entrega..." />
+                        </div>
+                        <div class="col-12 text-end">
+                            <button class="btn btn-primary btn-sm" type="submit">
+                                <i class="bi bi-plus-circle me-1"></i>Adicionar na agenda
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header"><i class="bi bi-pencil me-2"></i>Editar Projeto</div>
+            <div class="card-body">
+                <form method="post" asp-page-handler="Salvar">
+                    <input type="hidden" name="id" value="@p.Id" />
+                    <div class="row g-2">
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Título *</label>
+                            <input asp-for="ProjetoEdit.Titulo" class="form-control" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Prazo</label>
+                            <input asp-for="ProjetoEdit.DataLimite" type="text" class="form-control"
+                                   placeholder="dd/mm/aaaa" inputmode="numeric" data-br-date />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Prioridade</label>
+                            <select asp-for="ProjetoEdit.Prioridade" class="form-select">
+                                <option value="0">Baixa</option>
+                                <option value="1">Média</option>
+                                <option value="2">Alta</option>
+                                <option value="3">Urgente</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Status</label>
+                            <select asp-for="ProjetoEdit.Status" class="form-select">
+                                <option value="0">A Fazer</option>
+                                <option value="1">Em Andamento</option>
+                                <option value="2">Pausado</option>
+                                <option value="3">Concluído</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Descrição</label>
+                            <textarea asp-for="ProjetoEdit.Descricao" class="form-control" rows="2"></textarea>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Categoria</label>
+                            <input asp-for="ProjetoEdit.Categoria" class="form-control" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Matéria</label>
+                            <select asp-for="ProjetoEdit.MateriaId" class="form-select">
+                                <option value="">— nenhuma —</option>
+                                @foreach (var m in Model.Materias)
+                                {
+                                    <option value="@m.Id">@m.Nome</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Observações</label>
+                            <textarea asp-for="ProjetoEdit.Observacoes" class="form-control" rows="3"
+                                      placeholder="Notas, links úteis, referências..."></textarea>
+                        </div>
+                        <div class="col-12 text-end">
+                            <button type="submit" class="btn btn-primary btn-sm">
+                                <i class="bi bi-save me-1"></i>Salvar
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        @if (Model.BloquesVinculados.Any())
+        {
+            <div class="card border-0 shadow-sm">
+                <div class="card-header"><i class="bi bi-hourglass-split me-2"></i>Blocos de Estudo Vinculados</div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                        @foreach (var b in Model.BloquesVinculados)
+                        {
+                            <li class="list-group-item d-flex justify-content-between align-items-center py-2">
+                                <div>
+                                    <div class="small fw-semibold">@b.Data.ToString("dd/MM") — @b.HoraInicio–@b.HoraFim</div>
+                                    <div class="text-muted small">@b.Titulo</div>
+                                </div>
+                                <span class="badge bg-@DiasHelper.ClasseStatusBloco(b.Status)">
+                                    @DiasHelper.LabelStatusBloco(b.Status)
+                                </span>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        }
+    </div>
+
+</div>

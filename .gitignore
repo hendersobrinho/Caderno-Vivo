@@ -1,0 +1,33 @@
+# Build output
+bin/
+obj/
+
+# Local database
+caderno.db
+caderno.db-shm
+caderno.db-wal
+*.db
+*.db-shm
+*.db-wal
+
+# Logs and temp files
+*.log
+*.tmp
+*.temp
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.user
+*.suo
+
+# Local agent/tool folders
+.agents/
+.codex/
+.claude/
+
+# ASP.NET generated/static cache artifacts
+*.Development.json.user
+

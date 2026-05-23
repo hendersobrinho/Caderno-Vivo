@@ -1,10 +1,12 @@
 @page
 @model CadernoVivo.Pages.Faculdade.PlanoDaSemana.IndexModel
+@using CadernoVivo.Helpers
+@using CadernoVivo.Models
 @{
     ViewData["Title"] = "Plano da Semana";
-    // Segunda a Sábado
-    var diasSemana = new[] { (1, "Segunda"), (2, "Terça"), (3, "Quarta"), (4, "Quinta"), (5, "Sexta"), (6, "Sábado") };
-    var hoje = (int)DateTime.Today.DayOfWeek;
+    var diasBlocos = Enumerable.Range(0, 7)
+        .Select(offset => Model.InicioSemana.AddDays(offset))
+        .ToList();
 }
 
 @section Breadcrumb {
@@ -12,53 +14,278 @@
     <li class="breadcrumb-item active">Plano da Semana</li>
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h4 class="fw-bold mb-0"><i class="bi bi-calendar-week text-primary me-2"></i>Plano da Semana</h4>
-    <small class="text-muted">Semana de @DateTime.Today.AddDays(-(int)DateTime.Today.DayOfWeek + 1).ToString("dd/MM") a @DateTime.Today.AddDays(-(int)DateTime.Today.DayOfWeek + 6).ToString("dd/MM")</small>
+<div class="week-hero mb-4 @(Model.SemanaAtual ? "current" : "")">
+    <div>
+        <div class="dash-eyebrow">@(Model.SemanaAtual ? "Semana atual" : "Semana planejada")</div>
+        <h4 class="fw-bold mb-1"><i class="bi bi-calendar-week text-primary me-2"></i>Plano da Semana</h4>
+        <div class="dash-muted">
+            @Model.InicioSemana.ToString("dd/MM") a @Model.FimSemana.ToString("dd/MM")
+            @if (Model.MinutosPlanejados > 0)
+            {
+                <span> · @Model.MinutosPlanejados min planejados</span>
+            }
+        </div>
+    </div>
+    <div class="week-nav">
+        <a asp-page="./Index" asp-route-inicio="@Model.InicioSemana.AddDays(-7).ToString("yyyy-MM-dd")"
+           class="btn btn-outline-secondary">
+            <i class="bi bi-chevron-left"></i>
+        </a>
+        <a asp-page="./Index" asp-route-inicio="@Model.InicioSemanaAtual.ToString("yyyy-MM-dd")"
+           class="btn @(Model.SemanaAtual ? "btn-primary" : "btn-outline-primary")">
+            Semana atual
+        </a>
+        <a asp-page="./Index" asp-route-inicio="@Model.InicioSemana.AddDays(7).ToString("yyyy-MM-dd")"
+           class="btn btn-outline-secondary">
+            <i class="bi bi-chevron-right"></i>
+        </a>
+    </div>
+    <div class="week-metrics">
+        <div>
+            <strong>@Model.ProgressoSemana%</strong>
+            <span>concluído</span>
+        </div>
+        <div class="@(Model.BlocosAtrasados > 0 ? "danger" : "")">
+            <strong>@Model.BlocosAtrasados</strong>
+            <span>atrasados</span>
+        </div>
+        <div>
+            <strong>@Model.BlocosSemana.Count</strong>
+            <span>blocos</span>
+        </div>
+    </div>
 </div>
 
-<!-- Grade de aulas -->
-<div class="grade-semana mb-4">
-    @foreach (var (diaNum, diaNome) in diasSemana)
+<div class="week-progress mb-4">
+    <div class="progress" style="height:8px">
+        <div class="progress-bar" style="width:@Model.ProgressoSemana%"></div>
+    </div>
+</div>
+
+@if (Model.BlocosSemana.Any())
+{
+    <div class="selection-toolbar mb-3">
+        <div>
+            <strong>Seleção rápida</strong>
+            <span>Marque blocos abaixo para excluir vários de uma vez.</span>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <button class="btn btn-sm btn-outline-secondary" type="button" onclick="toggleWeekSelection(true)">
+                Marcar todos
+            </button>
+            <button class="btn btn-sm btn-outline-secondary" type="button" onclick="toggleWeekSelection(false)">
+                Limpar seleção
+            </button>
+            <button class="btn btn-sm btn-outline-danger" type="submit" form="formExcluirSelecionados"
+                    onclick="return confirm('Excluir os blocos selecionados?')">
+                <i class="bi bi-trash3 me-1"></i>Excluir marcados
+            </button>
+        </div>
+    </div>
+}
+
+<div class="week-days mb-4">
+    @foreach (var data in diasBlocos)
     {
-        var aulas = Model.Grade.ContainsKey(diaNum) ? Model.Grade[diaNum] : [];
-        var isHoje = diaNum == hoje;
-        <div class="dia-card @(isHoje ? "border border-primary" : "")">
-            <div class="dia-header d-flex justify-content-between">
-                <span>@diaNome</span>
-                @if (isHoje) { <span class="badge bg-primary" style="font-size:.6rem">Hoje</span> }
-            </div>
-            @if (!aulas.Any())
+        var blocosDia = Model.BlocosPorDia.TryGetValue(data.Date, out var itens) ? itens : [];
+        var isHoje = data.Date == DateTime.Today;
+        var isPast = data.Date < DateTime.Today;
+        var concluidos = blocosDia.Count(b => b.Status == StatusBloco.Concluido);
+        var pendentes = blocosDia.Count(b => b.Status != StatusBloco.Concluido && b.Status != StatusBloco.NaoFeito);
+        var atrasado = isPast && pendentes > 0;
+        var stateClass = atrasado
+            ? "danger"
+            : isHoje
+                ? "today"
+                : blocosDia.Any() && pendentes == 0
+                    ? "done"
+                    : blocosDia.Any()
+                        ? "planned"
+                        : "empty";
+
+        <a href="#dia-@data.ToString("yyyyMMdd")" class="week-day @stateClass text-decoration-none">
+            <span>@DiasHelper.NomeDia((int)data.DayOfWeek)</span>
+            <strong>@data.ToString("dd/MM")</strong>
+            @if (isHoje)
             {
-                <small class="text-muted">Sem aulas</small>
+                <em>Hoje</em>
+            }
+            else if (blocosDia.Any())
+            {
+                <em>@concluidos/@blocosDia.Count feito(s)</em>
             }
             else
             {
-                @foreach (var (aula, nome) in aulas.OrderBy(x => x.Aula.HoraInicio))
-                {
-                    <div class="aula-bloco">
-                        <div class="fw-semibold text-truncate">@nome</div>
-                        <div class="text-muted">@aula.HoraInicio – @aula.HoraFim</div>
-                        @if (aula.Sala != null) { <div class="text-muted" style="font-size:.7rem">@aula.Sala</div> }
-                    </div>
-                }
+                <em>Sem blocos</em>
             }
-        </div>
+        </a>
     }
 </div>
 
-<!-- Tarefas desta semana -->
-<div class="card">
-    <div class="card-header">
-        <i class="bi bi-list-check me-2 text-warning"></i>Tarefas com prazo esta semana
+@if (Model.Materias.Any(m => m.AulasSemanais.Any()))
+{
+    <div class="class-strip mb-4">
+        <div class="section-title mb-2">Aulas fixas cadastradas</div>
+        <div class="d-flex flex-wrap gap-2">
+            @foreach (var m in Model.Materias)
+            {
+                foreach (var aula in m.AulasSemanais.OrderBy(a => a.DiaSemana).ThenBy(a => a.HoraInicio))
+                {
+                    <span class="class-pill">
+                        @DiasHelper.NomeDia(aula.DiaSemana) · @aula.HoraInicio-@aula.HoraFim · @m.Nome
+                    </span>
+                }
+            }
+        </div>
     </div>
-    <div class="card-body p-0">
-        @if (!Model.TarefasSemana.Any())
+}
+
+<form method="post" asp-page-handler="ExcluirSelecionados" id="formExcluirSelecionados">
+</form>
+
+<div class="week-board">
+    @if (!Model.BlocosSemana.Any())
+    {
+        <div class="empty-panel">
+            <i class="bi bi-calendar-plus"></i>
+            <span>Nenhum bloco importado ou criado manualmente nesta semana.</span>
+            <a asp-page="/PlanoImportar/Index" class="btn btn-primary mt-2">Importar plano</a>
+        </div>
+    }
+    else
+    {
+        @foreach (var data in diasBlocos)
         {
-            <div class="text-center text-muted py-4 small">Nenhuma tarefa com prazo esta semana.</div>
+            var blocosDia = Model.BlocosPorDia.TryGetValue(data.Date, out var itens) ? itens : [];
+            var isHoje = data.Date == DateTime.Today;
+            var isPast = data.Date < DateTime.Today;
+            var atrasadosDia = blocosDia.Count(b => isPast && b.Status != StatusBloco.Concluido && b.Status != StatusBloco.NaoFeito);
+
+            <section class="week-column @(isHoje ? "today" : "") @(atrasadosDia > 0 ? "has-late" : "")" id="dia-@data.ToString("yyyyMMdd")">
+                <header>
+                    <div>
+                        <strong>@DiasHelper.NomeDia((int)data.DayOfWeek)</strong>
+                        <span>@data.ToString("dd/MM/yyyy")</span>
+                    </div>
+                    @if (isHoje)
+                    {
+                        <span class="badge bg-primary">Hoje</span>
+                    }
+                    else if (atrasadosDia > 0)
+                    {
+                        <span class="badge bg-danger">@atrasadosDia atraso(s)</span>
+                    }
+                    else
+                    {
+                        <span class="badge text-bg-light border">@blocosDia.Count bloco(s)</span>
+                    }
+                </header>
+
+                @if (!blocosDia.Any())
+                {
+                    <div class="week-empty">Sem blocos planejados.</div>
+                }
+                else
+                {
+                    <div class="week-blocks">
+                        @foreach (var bloco in blocosDia)
+                        {
+                            var atrasado = isPast && bloco.Status != StatusBloco.Concluido && bloco.Status != StatusBloco.NaoFeito;
+                            <article class="week-block @(atrasado ? "late" : "") @(bloco.Status == StatusBloco.Concluido ? "done" : "")">
+                                <div class="block-top">
+                                    <div>
+                                        <label class="week-select-line">
+                                            <input type="checkbox" name="blocoIds" value="@bloco.Id"
+                                                   form="formExcluirSelecionados" class="week-select-check" />
+                                            <span>Selecionar</span>
+                                        </label>
+                                        <div class="block-title">@bloco.Titulo</div>
+                                        @if (!string.IsNullOrWhiteSpace(bloco.Descricao))
+                                        {
+                                            <div class="block-desc">@bloco.Descricao</div>
+                                        }
+                                    </div>
+                                    <div class="block-side">
+                                        <span class="time-chip">@bloco.HoraInicio - @bloco.HoraFim</span>
+                                        <button class="btn btn-sm btn-outline-secondary" type="button"
+                                                data-bs-toggle="collapse" data-bs-target="#ajustar-bloco-@bloco.Id">
+                                            <i class="bi bi-sliders"></i>Ajustar
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="d-flex gap-2 flex-wrap mt-2">
+                                    <span class="badge bg-@DiasHelper.ClasseStatusBloco(bloco.Status)">
+                                        @DiasHelper.LabelStatusBloco(bloco.Status)
+                                    </span>
+                                    @if (bloco.Materia != null)
+                                    {
+                                        <span class="badge bg-primary-subtle text-primary-emphasis">@bloco.Materia.Nome</span>
+                                    }
+                                    else if (bloco.Artigo != null)
+                                    {
+                                        <span class="badge bg-info-subtle text-info-emphasis">@bloco.Artigo.Titulo</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary-subtle text-secondary-emphasis">@bloco.Modulo</span>
+                                    }
+                                </div>
+                                <div class="collapse mt-2" id="ajustar-bloco-@bloco.Id">
+                                    <form method="post" asp-page-handler="AjustarBloco" class="quick-adjust">
+                                        <input type="hidden" name="id" value="@bloco.Id" />
+                                        <div class="row g-2">
+                                            <div class="col-md-3">
+                                                <label class="form-label small fw-semibold">Data</label>
+                                                <input type="text" name="data" class="form-control form-control-sm"
+                                                       value="@bloco.Data.ToString("dd/MM/yyyy")"
+                                                       placeholder="dd/mm/aaaa" inputmode="numeric" data-br-date />
+                                            </div>
+                                            <div class="col-md-2">
+                                                <label class="form-label small fw-semibold">Início</label>
+                                                <input type="text" name="horaInicio" class="form-control form-control-sm"
+                                                       value="@bloco.HoraInicio" placeholder="19:30"
+                                                       inputmode="numeric" data-br-time />
+                                            </div>
+                                            <div class="col-md-2">
+                                                <label class="form-label small fw-semibold">Fim</label>
+                                                <input type="text" name="horaFim" class="form-control form-control-sm"
+                                                       value="@bloco.HoraFim" placeholder="21:00"
+                                                       inputmode="numeric" data-br-time />
+                                            </div>
+                                            <div class="col-md-5">
+                                                <label class="form-label small fw-semibold">Título</label>
+                                                <input type="text" name="titulo" class="form-control form-control-sm"
+                                                       value="@bloco.Titulo" />
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label small fw-semibold">Descrição</label>
+                                                <input type="text" name="descricao" class="form-control form-control-sm"
+                                                       value="@bloco.Descricao" />
+                                            </div>
+                                            <div class="col-12 text-end">
+                                                <button type="submit" class="btn btn-sm btn-primary">
+                                                    <i class="bi bi-save me-1"></i>Salvar ajuste
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+                            </article>
+                        }
+                    </div>
+                }
+            </section>
         }
-        else
-        {
+    }
+</div>
+
+@if (Model.TarefasSemana.Any())
+{
+    <div class="card mt-4">
+        <div class="card-header">
+            <i class="bi bi-list-check me-2 text-warning"></i>Tarefas com prazo nesta semana
+        </div>
+        <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-sm align-middle mb-0">
                     <thead><tr><th>Tarefa</th><th>Matéria</th><th>Prazo</th><th>Status</th></tr></thead>
@@ -75,14 +302,16 @@
                     </tbody>
                 </table>
             </div>
-        }
+        </div>
     </div>
-</div>
+}
 
-@if (!Model.Materias.Any())
-{
-    <div class="alert alert-info mt-4">
-        <i class="bi bi-info-circle me-2"></i>
-        Cadastre matérias e adicione aulas semanais para ver o plano aqui.
-    </div>
+@section Scripts {
+    <script>
+        function toggleWeekSelection(checked) {
+            document.querySelectorAll('.week-select-check').forEach(function (input) {
+                input.checked = checked;
+            });
+        }
+    </script>
 }

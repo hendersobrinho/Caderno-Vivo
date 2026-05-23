@@ -37,8 +37,14 @@ public class BlocoEstudo
     public int? ArtigoId { get; set; }
     public Artigo? Artigo { get; set; }
 
+    public int? ProjetoId { get; set; }
+    public Projeto? Projeto { get; set; }
+
     [Display(Name = "Status")]
     public StatusBloco Status { get; set; } = StatusBloco.Agendado;
+
+    [Display(Name = "Conclusão")]
+    public DateTime? DataConclusao { get; set; }
 
     [Display(Name = "Onde parei")]
     public string? OndeParei { get; set; }

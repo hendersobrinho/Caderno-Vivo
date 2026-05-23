@@ -16,7 +16,6 @@ public class IndexModel : PageModel
     public async Task OnGetAsync()
     {
         Artigos = await _db.Artigos
-            .Include(a => a.Tarefas)
             .Include(a => a.Roadmap)
             .Include(a => a.Aulas)
             .OrderByDescending(a => a.DataAtualizacao)

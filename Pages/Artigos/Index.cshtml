@@ -28,7 +28,6 @@ else
     <div class="row g-3">
         @foreach (var a in Model.Artigos)
         {
-            var tarefasPendentes = a.Tarefas.Count(t => t.Status != StatusTarefa.Concluida);
             var roadmapConcluido = a.Roadmap.Count(r => r.Concluido);
             <div class="col-md-6 col-xl-4">
                 <div class="card h-100">
@@ -74,12 +73,6 @@ else
                             {
                                 <span class="badge bg-light text-secondary">
                                     <i class="bi bi-map me-1"></i>@roadmapConcluido/@a.Roadmap.Count etapas
-                                </span>
-                            }
-                            @if (tarefasPendentes > 0)
-                            {
-                                <span class="badge bg-warning text-dark">
-                                    <i class="bi bi-hourglass me-1"></i>@tarefasPendentes tarefa(s)
                                 </span>
                             }
                         </div>

@@ -1,0 +1,66 @@
+@model CadernoVivo.Models.Lembrete
+@using CadernoVivo.Helpers
+@{
+    var dias = Model.DiasRestantes;
+    var atrasado = dias < 0;
+}
+
+<div class="reminder-row @(Model.Destaque ? "featured" : "") @(atrasado ? "late" : "")">
+    <div class="reminder-row-main">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <div class="fw-semibold">@Model.Titulo</div>
+            @if (Model.Destaque)
+            {
+                <span class="badge bg-primary"><i class="bi bi-pin-angle-fill"></i>Destaque</span>
+            }
+            <span class="badge bg-@DiasHelper.ClassePrioridade(Model.Prioridade)">
+                @DiasHelper.LabelPrioridade(Model.Prioridade)
+            </span>
+            <span class="badge bg-@DiasHelper.ClasseCountdown(dias)">
+                @DiasHelper.LabelCountdown(dias)
+            </span>
+        </div>
+        @if (!string.IsNullOrWhiteSpace(Model.Descricao))
+        {
+            <div class="small text-muted mt-1">@Model.Descricao</div>
+        }
+        <div class="reminder-meta mt-2">
+            <span><i class="bi bi-tag"></i>@DiasHelper.LabelEscopoLembrete(Model.Escopo)</span>
+            @if (Model.Materia != null)
+            {
+                <span><i class="bi bi-mortarboard"></i>@Model.Materia.Nome</span>
+            }
+            @if (Model.Projeto != null)
+            {
+                <span><i class="bi bi-kanban"></i>@Model.Projeto.Titulo</span>
+            }
+        </div>
+    </div>
+    <div class="reminder-row-actions">
+        <form method="post" asp-page-handler="Concluir">
+            <input type="hidden" name="id" value="@Model.Id" />
+            <button class="btn btn-sm btn-success" type="submit">Concluir</button>
+        </form>
+        <form method="post" asp-page-handler="AlternarDestaque">
+            <input type="hidden" name="id" value="@Model.Id" />
+            <button class="btn btn-sm btn-outline-primary" type="submit">
+                @(Model.Destaque ? "Desfixar" : "Fixar")
+            </button>
+        </form>
+        <form method="post" asp-page-handler="Adiar">
+            <input type="hidden" name="id" value="@Model.Id" />
+            <input type="hidden" name="destino" value="amanha" />
+            <button class="btn btn-sm btn-outline-secondary" type="submit">Amanhã</button>
+        </form>
+        <form method="post" asp-page-handler="Arquivar">
+            <input type="hidden" name="id" value="@Model.Id" />
+            <button class="btn btn-sm btn-outline-secondary" type="submit">Arquivar</button>
+        </form>
+        <form method="post" asp-page-handler="Excluir" onsubmit="return confirm('Excluir lembrete?')">
+            <input type="hidden" name="id" value="@Model.Id" />
+            <button class="btn btn-sm btn-outline-danger" type="submit">
+                <i class="bi bi-trash"></i>
+            </button>
+        </form>
+    </div>
+</div>

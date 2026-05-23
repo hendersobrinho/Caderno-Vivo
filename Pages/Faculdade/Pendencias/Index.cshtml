@@ -40,7 +40,8 @@
                     </select>
                 </div>
                 <div class="col-md-3">
-                    <input asp-for="NovaPendencia.DataLimite" class="form-control form-control-sm" type="datetime-local" placeholder="Data limite" />
+                    <input asp-for="NovaPendencia.DataLimite" class="form-control form-control-sm" type="text"
+                           placeholder="dd/mm/aaaa HH:mm" inputmode="numeric" data-br-datetime />
                 </div>
                 <div class="col-md-2 d-flex align-items-center">
                     <button type="submit" class="btn btn-sm btn-danger w-100">Adicionar</button>

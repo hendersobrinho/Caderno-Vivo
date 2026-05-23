@@ -1,9 +1,34 @@
+@using CadernoVivo.Data
+@using Microsoft.EntityFrameworkCore
+@inject AppDbContext _layoutDb
+@{
+    var _projAtivos = await _layoutDb.Projetos.CountAsync(p => p.Status != CadernoVivo.Models.StatusProjeto.Concluido);
+}
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - Caderno Vivo</title>
+
+    @* Init de aparência ANTES do CSS — evita flash de tema errado *@
+    <script>
+    (function() {
+      try {
+        var s = JSON.parse(localStorage.getItem('cv:appearance') || '{}');
+        var d = { theme: 'light', accent: 'violet', sidebar: 'ink', neutral: 'stone', brand: 'caveat', density: 'compact' };
+        var v = Object.assign({}, d, s);
+        var h = document.documentElement;
+        h.setAttribute('data-theme', v.theme);
+        h.setAttribute('data-sidebar', v.sidebar);
+        h.setAttribute('data-brand', v.brand);
+        h.setAttribute('data-density', v.density);
+        if (v.neutral && v.neutral !== 'stone') h.setAttribute('data-neutral', v.neutral);
+        if (v.accent && v.accent !== 'blue')    h.setAttribute('data-accent', v.accent);
+      } catch(e) {}
+    })();
+    </script>
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
@@ -15,7 +40,7 @@
     <nav id="sidebar">
         <div class="sidebar-brand">
             <i class="bi bi-journal-bookmark-fill"></i>
-            <span>Caderno Vivo</span>
+            <span class="brand-name">Caderno Vivo</span>
         </div>
 
         <ul class="nav flex-column mt-2">
@@ -29,22 +54,28 @@
                     <i class="bi bi-speedometer2"></i> Dashboard
                 </a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link" asp-page="/LinhaDoTempo/Index">
+                    <i class="bi bi-clock-history"></i> Linha do Tempo
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" asp-page="/Projetos/Index">
+                    <i class="bi bi-kanban"></i> Projetos
+                    <span class="nav-badge">@_projAtivos</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" asp-page="/Lembretes/Index">
+                    <i class="bi bi-pin-angle"></i> Lembretes
+                </a>
+            </li>
 
             <li class="nav-section">FACULDADE</li>
 
             <li class="nav-item">
                 <a class="nav-link" asp-page="/Faculdade/Index">
-                    <i class="bi bi-mortarboard-fill"></i> Matérias
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" asp-page="/Faculdade/Tarefas/Index">
-                    <i class="bi bi-check2-square"></i> Tarefas
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" asp-page="/Faculdade/Duvidas/Index">
-                    <i class="bi bi-question-circle"></i> Dúvidas
+                    <i class="bi bi-mortarboard-fill"></i> Base de Matérias
                 </a>
             </li>
             <li class="nav-item">
@@ -57,35 +88,12 @@
                     <i class="bi bi-calendar-week"></i> Plano da Semana
                 </a>
             </li>
-            <li class="nav-item">
-                <a class="nav-link" asp-page="/Faculdade/Importar/Index">
-                    <i class="bi bi-cloud-upload"></i> Importar JSON
-                </a>
-            </li>
-
-            <li class="nav-section">ARTIGOS</li>
-
-            <li class="nav-item">
-                <a class="nav-link" asp-page="/Artigos/Index">
-                    <i class="bi bi-journal-text"></i> Artigos
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" asp-page="/Artigos/Tarefas/Index">
-                    <i class="bi bi-check2-square"></i> Tarefas
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" asp-page="/Artigos/Importar/Index">
-                    <i class="bi bi-cloud-upload"></i> Importar JSON
-                </a>
-            </li>
 
             <li class="nav-section">FERRAMENTAS</li>
 
             <li class="nav-item">
                 <a class="nav-link" asp-page="/PlanoImportar/Index">
-                    <i class="bi bi-cloud-upload"></i> Importar Plano
+                    <i class="bi bi-calendar-plus"></i> Cronograma
                 </a>
             </li>
             <li class="nav-item">
@@ -108,6 +116,92 @@
                     @RenderSection("Breadcrumb", required: false)
                 </ol>
             </nav>
+
+            <!-- Botão e painel de Aparência -->
+            <div class="ms-auto" style="position: relative;">
+                <button type="button" class="ap-trigger" id="appearance-btn"
+                        aria-expanded="false" aria-controls="appearance-panel">
+                    <i class="bi bi-palette"></i>
+                    <span>Aparência</span>
+                </button>
+
+                <div class="appearance-panel" id="appearance-panel" role="dialog"
+                     aria-label="Configurações de aparência" hidden>
+                    <div class="ap-head">
+                        <strong>Aparência</strong>
+                        <button type="button" class="ap-close" aria-label="Fechar">
+                            <i class="bi bi-x" style="font-size: 16px;"></i>
+                        </button>
+                    </div>
+                    <div class="ap-body">
+
+                        <div class="ap-section">Tema</div>
+                        <div class="ap-row">
+                            <label>Modo</label>
+                            <div class="ap-segment" data-group="theme">
+                                <button type="button" data-val="light">Claro</button>
+                                <button type="button" data-val="dark">Noturno</button>
+                            </div>
+                        </div>
+                        <div class="ap-row">
+                            <label>Cor de destaque</label>
+                            <div class="ap-swatches" data-group="accent">
+                                <button type="button" data-val="blue"    style="background:#2563eb" title="Azul"></button>
+                                <button type="button" data-val="violet"  style="background:#7c3aed" title="Violeta"></button>
+                                <button type="button" data-val="emerald" style="background:#059669" title="Esmeralda"></button>
+                                <button type="button" data-val="rose"    style="background:#e11d48" title="Rosa"></button>
+                            </div>
+                        </div>
+
+                        <div class="ap-section">Sidebar &amp; contraste</div>
+                        <div class="ap-row">
+                            <label>Estilo da sidebar</label>
+                            <select class="ap-select" data-key="sidebar">
+                                <option value="ink">Ink (escura)</option>
+                                <option value="paper">Paper (cream)</option>
+                                <option value="tint">Tint (acento suave)</option>
+                                <option value="light">Light (branca)</option>
+                            </select>
+                        </div>
+                        <div class="ap-row">
+                            <label>Tom neutro</label>
+                            <select class="ap-select" data-key="neutral">
+                                <option value="stone">Stone · warm</option>
+                                <option value="slate">Slate · frio</option>
+                                <option value="sand">Sand · papel</option>
+                                <option value="zinc">Zinc · cinza puro</option>
+                            </select>
+                        </div>
+
+                        <div class="ap-section">Tipografia</div>
+                        <div class="ap-row">
+                            <label>Fonte da marca</label>
+                            <select class="ap-select" data-key="brand">
+                                <option value="dm-serif">DM Serif</option>
+                                <option value="instrument">Instrument</option>
+                                <option value="newsreader">Newsreader</option>
+                                <option value="caveat">Caveat (manuscrita)</option>
+                                <option value="jakarta">Jakarta (sans)</option>
+                            </select>
+                        </div>
+
+                        <div class="ap-section">Layout</div>
+                        <div class="ap-row">
+                            <label>Densidade</label>
+                            <div class="ap-segment" data-group="density">
+                                <button type="button" data-val="compact">Compacto</button>
+                                <button type="button" data-val="regular">Normal</button>
+                                <button type="button" data-val="comfy">Amplo</button>
+                            </div>
+                        </div>
+
+                    </div>
+                    <div class="ap-foot">
+                        <button type="button" class="ap-reset">Restaurar padrão</button>
+                        <span class="ap-saved" style="opacity:0.5;">Salvo automaticamente</span>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Page content -->
@@ -133,13 +227,14 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="~/js/appearance.js" asp-append-version="true"></script>
+
 <script>
     document.getElementById('sidebarToggle').addEventListener('click', function () {
         document.getElementById('sidebar').classList.toggle('collapsed');
         document.getElementById('content-wrapper').classList.toggle('expanded');
     });
 
-    // Marca link ativo na sidebar
     (function () {
         const path = window.location.pathname.toLowerCase();
         document.querySelectorAll('#sidebar .nav-link').forEach(link => {
@@ -149,6 +244,44 @@
             } else if (href === '/' && path === '/') {
                 link.classList.add('active');
             }
+        });
+    })();
+
+    (function () {
+        function onlyDigits(value) {
+            return value.replace(/\D/g, '');
+        }
+
+        function dateMask(value) {
+            const digits = onlyDigits(value).slice(0, 8);
+            return digits
+                .replace(/^(\d{2})(\d)/, '$1/$2')
+                .replace(/^(\d{2})\/(\d{2})(\d)/, '$1/$2/$3');
+        }
+
+        function timeMask(value) {
+            const digits = onlyDigits(value).slice(0, 4);
+            return digits.replace(/^(\d{2})(\d)/, '$1:$2');
+        }
+
+        function dateTimeMask(value) {
+            const digits = onlyDigits(value).slice(0, 12);
+            const date = dateMask(digits.slice(0, 8));
+            const time = timeMask(digits.slice(8, 12));
+            return time ? `${date} ${time}` : date;
+        }
+
+        function applyMask(input) {
+            if (input.hasAttribute('data-br-date')) input.value = dateMask(input.value);
+            if (input.hasAttribute('data-br-time')) input.value = timeMask(input.value);
+            if (input.hasAttribute('data-br-datetime')) input.value = dateTimeMask(input.value);
+        }
+
+        document.querySelectorAll('[data-br-date], [data-br-time], [data-br-datetime]').forEach(input => {
+            applyMask(input);
+            input.addEventListener('input', () => {
+                applyMask(input);
+            });
         });
     })();
 </script>

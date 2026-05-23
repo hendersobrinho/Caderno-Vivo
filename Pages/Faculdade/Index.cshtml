@@ -1,7 +1,7 @@
 @page
 @model CadernoVivo.Pages.Faculdade.IndexModel
 @{
-    ViewData["Title"] = "Faculdade – Matérias";
+    ViewData["Title"] = "Faculdade – Base de Matérias";
 }
 
 @section Breadcrumb {
@@ -9,9 +9,12 @@
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h4 class="fw-bold mb-0"><i class="bi bi-mortarboard-fill text-primary me-2"></i>Matérias</h4>
-    <a asp-page="/Faculdade/Materias/Create" class="btn btn-primary">
-        <i class="bi bi-plus-lg me-1"></i>Nova matéria
+    <div>
+        <h4 class="fw-bold mb-1"><i class="bi bi-mortarboard-fill text-primary me-2"></i>Base de Matérias</h4>
+        <small class="text-muted">Opcional: o importador cria matérias automaticamente quando o plano trouxer o nome.</small>
+    </div>
+    <a asp-page="/Faculdade/Materias/Create" class="btn btn-outline-secondary">
+        <i class="bi bi-plus-lg me-1"></i>Adicionar manualmente
     </a>
 </div>
 
@@ -19,8 +22,9 @@
 {
     <div class="text-center py-5 text-muted">
         <i class="bi bi-mortarboard display-4 d-block mb-3"></i>
-        <p>Nenhuma matéria cadastrada ainda.</p>
-        <a asp-page="/Faculdade/Materias/Create" class="btn btn-primary">Cadastrar primeira matéria</a>
+        <p class="mb-1">Nenhuma matéria na base ainda.</p>
+        <p class="small">Ao importar um plano da faculdade, as matérias do JSON entram aqui automaticamente.</p>
+        <a asp-page="/PlanoImportar/Index" class="btn btn-primary">Importar plano</a>
     </div>
 }
 else
@@ -28,8 +32,6 @@ else
     <div class="row g-3">
         @foreach (var m in Model.Materias)
         {
-            var pendentes = m.Tarefas.Count(t => t.Status == StatusTarefa.Pendente || t.Status == StatusTarefa.EmAndamento);
-            var duvidasAbertas = m.Duvidas.Count(d => !d.Resolvida);
             <div class="col-md-6 col-xl-4">
                 <div class="card h-100">
                     <div class="card-body">
@@ -52,18 +54,6 @@ else
                             <span class="badge bg-primary bg-opacity-10 text-primary">
                                 <i class="bi bi-calendar3 me-1"></i>@m.AulasSemanais.Count aula(s)/semana
                             </span>
-                            @if (pendentes > 0)
-                            {
-                                <span class="badge bg-warning text-dark">
-                                    <i class="bi bi-hourglass me-1"></i>@pendentes tarefa(s)
-                                </span>
-                            }
-                            @if (duvidasAbertas > 0)
-                            {
-                                <span class="badge bg-danger bg-opacity-10 text-danger">
-                                    <i class="bi bi-question-circle me-1"></i>@duvidasAbertas dúvida(s)
-                                </span>
-                            }
                         </div>
                         <div class="d-flex gap-2">
                             <a asp-page="/Faculdade/Materias/Detalhes" asp-route-id="@m.Id" class="btn btn-sm btn-primary flex-grow-1">

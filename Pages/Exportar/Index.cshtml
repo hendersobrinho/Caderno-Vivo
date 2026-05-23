@@ -15,7 +15,7 @@
 </div>
 
 <div class="row g-3 mb-4">
-    <div class="col-md-6">
+    <div class="col-md-4">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body text-center py-4">
                 <i class="bi bi-file-earmark-text display-4 text-success mb-3"></i>
@@ -27,7 +27,7 @@
             </div>
         </div>
     </div>
-    <div class="col-md-6">
+    <div class="col-md-4">
         <div class="card border-0 shadow-sm h-100">
             <div class="card-body text-center py-4">
                 <i class="bi bi-filetype-json display-4 text-primary mb-3"></i>
@@ -39,6 +39,24 @@
             </div>
         </div>
     </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center py-4">
+                <i class="bi bi-calendar-event display-4 text-info mb-3"></i>
+                <h5 class="fw-bold">Calendário com alarmes</h5>
+                <p class="text-muted small">Arquivo .ics com todos os blocos e alerta 10 minutos antes. Pode importar no calendário do PC ou Google.</p>
+                <a asp-page-handler="Calendario" class="btn btn-info text-white">
+                    <i class="bi bi-download me-2"></i>Baixar .ics
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="alert alert-info small">
+    <i class="bi bi-info-circle me-2"></i>
+    Para apitar no celular sem o PC ligado, importe o arquivo <strong>.ics</strong> no Google Calendar ou em um calendário sincronizado com o telefone.
+    Assinatura automática por URL só funciona se este app estiver publicado em um endereço acessível pelo Google, não apenas em <code>localhost</code>.
 </div>
 
 <!-- Preview do conteúdo -->
@@ -108,32 +126,8 @@
             <p class="text-muted small mb-3"><em>Nenhuma pendência aberta.</em></p>
         }
 
-        <!-- Artigos ativos -->
-        <h6 class="fw-semibold text-muted text-uppercase small mb-2">Artigos em Andamento</h6>
-        @{
-            var artigosAtivos = Model.Artigos
-                .Where(a => a.Status != StatusArtigo.Publicado && a.Status != StatusArtigo.Pausado)
-                .ToList();
-        }
-        @if (artigosAtivos.Any())
-        {
-            <ul class="list-unstyled mb-0">
-                @foreach (var a in artigosAtivos)
-                {
-                    <li class="mb-1 small">
-                        <i class="bi bi-journal-text text-info me-1"></i>
-                        <strong>@a.Titulo</strong> — @a.Progresso% (@DiasHelper.LabelStatusArtigo(a.Status))
-                        @if (!string.IsNullOrWhiteSpace(a.UltimoPontoEstudado))
-                        {
-                            <span class="text-muted"> — @a.UltimoPontoEstudado</span>
-                        }
-                    </li>
-                }
-            </ul>
-        }
-        else
-        {
-            <p class="text-muted small mb-0"><em>Nenhum artigo em andamento.</em></p>
-        }
+        <p class="text-muted small mb-0">
+            Trabalhos e coisas avulsas agora ficam em <strong>Projetos</strong> e <strong>Lembretes</strong>.
+        </p>
     </div>
 </div>

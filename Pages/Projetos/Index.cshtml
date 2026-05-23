@@ -1,0 +1,239 @@
+@page
+@model CadernoVivo.Pages.Projetos.IndexModel
+@using CadernoVivo.Helpers
+@using CadernoVivo.Models
+@{
+    ViewData["Title"] = "Projetos";
+}
+
+@section Breadcrumb {
+    <li class="breadcrumb-item active">Projetos</li>
+}
+
+<!-- Cabeçalho -->
+<div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2">
+    <div>
+        <h4 class="fw-bold mb-1"><i class="bi bi-kanban me-2 text-primary"></i>Projetos & Trabalhos</h4>
+        <p class="text-muted small mb-0">Visão geral de todos os trabalhos com checklist interativo</p>
+    </div>
+    <button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#formNovoProjeto">
+        <i class="bi bi-plus-lg me-1"></i>Novo Projeto
+    </button>
+</div>
+
+<!-- Stats de panorama -->
+<div class="proj-stats mb-3">
+    <div class="proj-stat-pill @(Model.TotalUrgentes > 0 ? "urgente" : "")">
+        <i class="bi bi-@(Model.TotalUrgentes > 0 ? "exclamation-triangle-fill" : "kanban")"></i>
+        <strong>@Model.TotalAtivos</strong>
+        <span>ativo(s)</span>
+    </div>
+    @if (Model.TotalUrgentes > 0)
+    {
+        <div class="proj-stat-pill urgente">
+            <i class="bi bi-clock-fill"></i>
+            <strong>@Model.TotalUrgentes</strong>
+            <span>com prazo próximo</span>
+        </div>
+    }
+    <div class="proj-stat-pill ok">
+        <i class="bi bi-check-circle-fill"></i>
+        <strong>@Model.TotalConcluidos</strong>
+        <span>concluído(s)</span>
+    </div>
+</div>
+
+<!-- Formulário novo projeto -->
+<div class="collapse mb-4" id="formNovoProjeto">
+    <div class="card border-0 shadow-sm">
+        <div class="card-header"><i class="bi bi-plus-circle me-2"></i>Criar Projeto</div>
+        <div class="card-body">
+            <form method="post" asp-page-handler="Criar">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Título *</label>
+                        <input asp-for="NovoProjeto.Titulo" class="form-control" placeholder="Ex: Trabalho de Cálculo — Integrais" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold">Prazo</label>
+                        <input asp-for="NovoProjeto.DataLimite" type="text" class="form-control"
+                               placeholder="dd/mm/aaaa" inputmode="numeric" data-br-date />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold">Prioridade</label>
+                        <select asp-for="NovoProjeto.Prioridade" class="form-select">
+                            <option value="0">Baixa</option>
+                            <option value="1" selected>Média</option>
+                            <option value="2">Alta</option>
+                            <option value="3">Urgente</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Descrição / Objetivo</label>
+                        <textarea asp-for="NovoProjeto.Descricao" class="form-control" rows="2"
+                                  placeholder="O que precisa ser feito?"></textarea>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold">Categoria</label>
+                        <input asp-for="NovoProjeto.Categoria" class="form-control" placeholder="Ex: Faculdade, Pessoal..." />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold">Matéria (opcional)</label>
+                        <select asp-for="NovoProjeto.MateriaId" class="form-select">
+                            <option value="">— nenhuma —</option>
+                            @foreach (var m in Model.Materias)
+                            {
+                                <option value="@m.Id">@m.Nome</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">Checklist <small class="text-muted fw-normal">(um item por linha)</small></label>
+                        <textarea asp-for="ChecklistTexto" class="form-control font-monospace" rows="4"
+                                  placeholder="- Ler capítulo 3&#10;- Fazer exercícios 1-10&#10;- Revisar antes de entregar"></textarea>
+                    </div>
+                    <div class="col-12 text-end">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-plus-circle me-1"></i>Criar Projeto
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Filtros -->
+<div class="d-flex gap-2 mb-3 flex-wrap align-items-center">
+    <span class="text-muted small me-1">Filtrar:</span>
+    <a asp-page="/Projetos/Index" class="btn btn-sm @(Model.FiltroStatus == null ? "btn-primary" : "btn-outline-secondary")">
+        Todos <span class="badge bg-white text-primary ms-1">@Model.Projetos.Count</span>
+    </a>
+    @foreach (var s in Enum.GetValues<StatusProjeto>())
+    {
+        var count = Model.Projetos.Count(p => p.Status == s);
+        if (count == 0 && s == StatusProjeto.Concluido && Model.FiltroStatus == null) { continue; }
+        <a asp-page="/Projetos/Index" asp-route-status="@s"
+           class="btn btn-sm @(Model.FiltroStatus == s.ToString() ? "btn-primary" : "btn-outline-secondary")">
+            @DiasHelper.LabelStatusProjeto(s)
+            <span class="badge bg-white text-dark ms-1">@count</span>
+        </a>
+    }
+</div>
+
+<!-- Lista panorâmica -->
+@if (!Model.Projetos.Any())
+{
+    <div class="card border-0 shadow-sm">
+        <div class="card-body text-center py-5 text-muted">
+            <i class="bi bi-kanban display-4 d-block mb-3"></i>
+            <h5>Nenhum projeto @(Model.FiltroStatus != null ? "neste status" : "cadastrado")</h5>
+            <p class="small">Clique em "Novo Projeto" para adicionar trabalhos, entregas e qualquer tarefa com prazo.</p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="proj-panorama">
+        @foreach (var p in Model.Projetos)
+        {
+            var dias = p.DiasRestantes;
+            var checklist = p.Checklist;
+            var feitos = checklist.Count(c => c.Feito);
+            var totalItens = checklist.Count;
+            var progresso = totalItens > 0 ? (int)((double)feitos / totalItens * 100) : 0;
+            var urgente = dias is <= 3 and >= 0 && p.Status != StatusProjeto.Concluido;
+            var concluido = p.Status == StatusProjeto.Concluido;
+
+            <div class="proj-card @(urgente ? "proj-card--urgente" : "") @(concluido ? "proj-card--concluido" : "")">
+
+                <!-- Cabeçalho do card -->
+                <div class="proj-card-head">
+                    <div class="proj-card-title-group">
+                        <h5 class="proj-card-name">@p.Titulo</h5>
+                        <div class="proj-card-meta">
+                            <span class="badge bg-@DiasHelper.ClasseStatusProjeto(p.Status)">
+                                @DiasHelper.LabelStatusProjeto(p.Status)
+                            </span>
+                            <span class="badge bg-@DiasHelper.ClassePrioridade(p.Prioridade)">
+                                @DiasHelper.LabelPrioridade(p.Prioridade)
+                            </span>
+                            @if (p.Materia != null)
+                            {
+                                <span class="badge bg-primary">@p.Materia.Nome</span>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(p.Categoria))
+                            {
+                                <span class="badge bg-secondary">@p.Categoria</span>
+                            }
+                        </div>
+                    </div>
+                    <div class="proj-card-actions">
+                        @if (dias.HasValue && !concluido)
+                        {
+                            <span class="badge bg-@DiasHelper.ClasseCountdown(dias) proj-deadline">
+                                <i class="bi bi-clock me-1"></i>@DiasHelper.LabelCountdown(dias)
+                                @if (p.DataLimite.HasValue)
+                                {
+                                    <span>· @p.DataLimite.Value.ToString("dd/MM")</span>
+                                }
+                            </span>
+                        }
+                        else if (concluido)
+                        {
+                            <span class="text-success small"><i class="bi bi-check-circle-fill me-1"></i>Concluído</span>
+                        }
+                        else
+                        {
+                            <span class="text-muted small">Sem prazo</span>
+                        }
+                        @if (!concluido)
+                        {
+                            <form method="post" asp-page-handler="MudarStatus" class="d-inline">
+                                <input type="hidden" name="id" value="@p.Id" />
+                                <input type="hidden" name="status" value="@StatusProjeto.Concluido" />
+                                <button type="submit" class="btn btn-sm btn-outline-success" title="Marcar concluído">
+                                    <i class="bi bi-check2-all"></i>
+                                </button>
+                            </form>
+                        }
+                        <form method="post" asp-page-handler="Excluir" class="d-inline"
+                              onsubmit="return confirm('Excluir projeto?')">
+                            <input type="hidden" name="id" value="@p.Id" />
+                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Excluir">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(p.Descricao))
+                {
+                    <p class="proj-card-desc">@p.Descricao</p>
+                }
+
+                <!-- Rodapé: progresso resumido + botão de detalhes -->
+                <div class="proj-card-footer">
+                    <div class="proj-card-footer-left">
+                        @if (totalItens > 0)
+                        {
+                            <div class="proj-progress-bar" style="width:120px">
+                                <div class="proj-progress-fill @(progresso == 100 ? "done" : "")"
+                                     style="width:@progresso%"></div>
+                            </div>
+                            <span class="proj-progress-text">@feitos/@totalItens itens</span>
+                        }
+                        else
+                        {
+                            <span class="text-muted small"><i class="bi bi-list-check me-1"></i>Sem checklist</span>
+                        }
+                    </div>
+                    <a asp-page="/Projetos/Detalhes" asp-route-id="@p.Id" class="btn btn-primary btn-sm">
+                        <i class="bi bi-kanban me-1"></i>Abrir projeto
+                    </a>
+                </div>
+
+            </div>
+        }
+    </div>
+}

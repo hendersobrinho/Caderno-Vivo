@@ -1,0 +1,14 @@
+[Unit]
+Description=Caderno Vivo local web app
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/hnd/Projects/csharp/CadernoVivo
+ExecStart=/usr/bin/dotnet run --no-launch-profile --urls http://localhost:5055
+Environment=ASPNETCORE_ENVIRONMENT=Development
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

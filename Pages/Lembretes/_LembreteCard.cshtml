@@ -1,0 +1,51 @@
+@model CadernoVivo.Models.Lembrete
+@using CadernoVivo.Helpers
+@{
+    var dias = Model.DiasRestantes;
+    var atrasado = dias < 0;
+}
+
+<article class="reminder-card @(atrasado ? "late" : "")">
+    <div class="d-flex justify-content-between align-items-start gap-2">
+        <div>
+            <div class="dash-eyebrow">@DiasHelper.LabelEscopoLembrete(Model.Escopo)</div>
+            <h6>@Model.Titulo</h6>
+        </div>
+        <span class="badge bg-@DiasHelper.ClassePrioridade(Model.Prioridade)">
+            @DiasHelper.LabelPrioridade(Model.Prioridade)
+        </span>
+    </div>
+    @if (!string.IsNullOrWhiteSpace(Model.Descricao))
+    {
+        <p>@Model.Descricao</p>
+    }
+    <div class="reminder-meta">
+        <span class="badge bg-@DiasHelper.ClasseCountdown(dias)">
+            <i class="bi bi-clock"></i>@DiasHelper.LabelCountdown(dias)
+        </span>
+        @if (Model.Materia != null)
+        {
+            <span><i class="bi bi-mortarboard"></i>@Model.Materia.Nome</span>
+        }
+        @if (Model.Projeto != null)
+        {
+            <span><i class="bi bi-kanban"></i>@Model.Projeto.Titulo</span>
+        }
+    </div>
+    <div class="reminder-actions">
+        <form method="post" asp-page-handler="Concluir">
+            <input type="hidden" name="id" value="@Model.Id" />
+            <button class="btn btn-sm btn-success" type="submit">Concluir</button>
+        </form>
+        <form method="post" asp-page-handler="Adiar">
+            <input type="hidden" name="id" value="@Model.Id" />
+            <input type="hidden" name="destino" value="amanha" />
+            <button class="btn btn-sm btn-outline-primary" type="submit">Amanhã</button>
+        </form>
+        <form method="post" asp-page-handler="Adiar">
+            <input type="hidden" name="id" value="@Model.Id" />
+            <input type="hidden" name="destino" value="sabado" />
+            <button class="btn btn-sm btn-outline-secondary" type="submit">Sábado</button>
+        </form>
+    </div>
+</article>

@@ -92,11 +92,13 @@
                         </div>
                         <div class="col-md-2">
                             <label class="form-label small">Início</label>
-                            <input asp-for="NovaAula.HoraInicio" class="form-control form-control-sm" type="time" />
+                            <input asp-for="NovaAula.HoraInicio" class="form-control form-control-sm" type="text"
+                                   placeholder="19:30" inputmode="numeric" data-br-time />
                         </div>
                         <div class="col-md-2">
                             <label class="form-label small">Fim</label>
-                            <input asp-for="NovaAula.HoraFim" class="form-control form-control-sm" type="time" />
+                            <input asp-for="NovaAula.HoraFim" class="form-control form-control-sm" type="text"
+                                   placeholder="21:00" inputmode="numeric" data-br-time />
                         </div>
                         <div class="col-md-3">
                             <label class="form-label small">Sala</label>
@@ -210,7 +212,8 @@
                         </div>
                         <div class="col-md-4">
                             <label class="form-label small">Prazo</label>
-                            <input asp-for="NovaTarefa.DataHoraLimite" class="form-control form-control-sm" type="datetime-local" />
+                            <input asp-for="NovaTarefa.DataHoraLimite" class="form-control form-control-sm" type="text"
+                                   placeholder="dd/mm/aaaa HH:mm" inputmode="numeric" data-br-datetime />
                         </div>
                         <div class="col-md-3 d-flex align-items-end">
                             <button type="submit" class="btn btn-sm btn-primary w-100">Adicionar</button>
@@ -256,7 +259,8 @@
                     <div class="row g-2">
                         <div class="col-md-3">
                             <label class="form-label small">Data</label>
-                            <input asp-for="NovoHistorico.Data" class="form-control form-control-sm" type="date" />
+                            <input asp-for="NovoHistorico.Data" class="form-control form-control-sm" type="text"
+                                   placeholder="dd/mm/aaaa" inputmode="numeric" data-br-date />
                         </div>
                         <div class="col-md-5">
                             <label class="form-label small">Título / Tema</label>

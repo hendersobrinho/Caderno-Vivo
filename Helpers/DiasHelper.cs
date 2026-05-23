@@ -101,4 +101,83 @@ public static class DiasHelper
 
     public static bool BlocoGerarPendencia(StatusBloco status) =>
         status is StatusBloco.Parcial or StatusBloco.NaoFeito;
+
+    public static string LabelStatusProjeto(StatusProjeto status) => status switch
+    {
+        StatusProjeto.AFazer      => "A Fazer",
+        StatusProjeto.EmAndamento => "Em Andamento",
+        StatusProjeto.Pausado     => "Pausado",
+        StatusProjeto.Concluido   => "Concluído",
+        _                         => "?"
+    };
+
+    public static string ClasseStatusProjeto(StatusProjeto status) => status switch
+    {
+        StatusProjeto.AFazer      => "secondary",
+        StatusProjeto.EmAndamento => "primary",
+        StatusProjeto.Pausado     => "warning",
+        StatusProjeto.Concluido   => "success",
+        _                         => "secondary"
+    };
+
+    public static string LabelPrioridade(PrioridadeProjeto p) => p switch
+    {
+        PrioridadeProjeto.Baixa   => "Baixa",
+        PrioridadeProjeto.Media   => "Média",
+        PrioridadeProjeto.Alta    => "Alta",
+        PrioridadeProjeto.Urgente => "Urgente",
+        _                         => "?"
+    };
+
+    public static string ClassePrioridade(PrioridadeProjeto p) => p switch
+    {
+        PrioridadeProjeto.Baixa   => "secondary",
+        PrioridadeProjeto.Media   => "info",
+        PrioridadeProjeto.Alta    => "warning",
+        PrioridadeProjeto.Urgente => "danger",
+        _                         => "secondary"
+    };
+
+    public static string ClasseCountdown(int? dias) => dias switch
+    {
+        null        => "secondary",
+        <= 0        => "danger",
+        <= 3        => "danger",
+        <= 7        => "warning",
+        _           => "success"
+    };
+
+    public static string LabelCountdown(int? dias) => dias switch
+    {
+        null  => "Sem prazo",
+        < 0   => $"Atrasado {Math.Abs(dias.Value)}d",
+        0     => "Hoje!",
+        1     => "Amanhã",
+        _     => $"{dias}d restantes"
+    };
+
+    public static string LabelStatusLembrete(StatusLembrete status) => status switch
+    {
+        StatusLembrete.Aberto => "Aberto",
+        StatusLembrete.Concluido => "Concluido",
+        StatusLembrete.Arquivado => "Arquivado",
+        _ => "?"
+    };
+
+    public static string ClasseStatusLembrete(StatusLembrete status) => status switch
+    {
+        StatusLembrete.Aberto => "primary",
+        StatusLembrete.Concluido => "success",
+        StatusLembrete.Arquivado => "secondary",
+        _ => "secondary"
+    };
+
+    public static string LabelEscopoLembrete(EscopoLembrete escopo) => escopo switch
+    {
+        EscopoLembrete.Avulso => "Avulso",
+        EscopoLembrete.Faculdade => "Faculdade",
+        EscopoLembrete.Projeto => "Projeto",
+        EscopoLembrete.Artigo => "Artigo",
+        _ => "?"
+    };
 }

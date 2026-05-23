@@ -19,6 +19,10 @@ public class AppDbContext : DbContext
     // Blocos de execução
     public DbSet<BlocoEstudo> BloquesEstudo => Set<BlocoEstudo>();
 
+    // Projetos / Tarefas avulsas
+    public DbSet<Projeto> Projetos => Set<Projeto>();
+    public DbSet<Lembrete> Lembretes => Set<Lembrete>();
+
     // Artigos
     public DbSet<Artigo> Artigos => Set<Artigo>();
     public DbSet<AulaArtigo> AulasArtigo => Set<AulaArtigo>();
@@ -53,6 +57,36 @@ public class AppDbContext : DbContext
             .HasOne(b => b.Artigo)
             .WithMany()
             .HasForeignKey(b => b.ArtigoId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<BlocoEstudo>()
+            .HasOne(b => b.Projeto)
+            .WithMany()
+            .HasForeignKey(b => b.ProjetoId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<Projeto>()
+            .HasOne(p => p.Materia)
+            .WithMany()
+            .HasForeignKey(p => p.MateriaId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<Lembrete>()
+            .HasOne(l => l.Materia)
+            .WithMany()
+            .HasForeignKey(l => l.MateriaId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<Lembrete>()
+            .HasOne(l => l.Projeto)
+            .WithMany()
+            .HasForeignKey(l => l.ProjetoId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<Lembrete>()
+            .HasOne(l => l.Artigo)
+            .WithMany()
+            .HasForeignKey(l => l.ArtigoId)
             .OnDelete(DeleteBehavior.SetNull);
     }
 }

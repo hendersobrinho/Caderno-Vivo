@@ -17,8 +17,6 @@ public class IndexModel : PageModel
     {
         Materias = await _db.Materias
             .Include(m => m.AulasSemanais)
-            .Include(m => m.Tarefas)
-            .Include(m => m.Duvidas)
             .OrderBy(m => m.Nome)
             .ToListAsync();
     }

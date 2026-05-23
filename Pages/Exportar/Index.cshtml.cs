@@ -44,6 +44,25 @@ public class IndexModel : PageModel
         return File(bytes, "application/json; charset=utf-8", nome);
     }
 
+    public async Task<IActionResult> OnGetCalendarioAsync()
+    {
+        var inicio = DateTime.Today.AddDays(-7);
+        var fim = DateTime.Today.AddDays(90);
+        var blocos = await _db.BloquesEstudo
+            .Include(b => b.Materia)
+            .Include(b => b.Artigo)
+            .Include(b => b.Projeto)
+            .Where(b => b.Data.Date >= inicio && b.Data.Date <= fim)
+            .OrderBy(b => b.Data)
+            .ThenBy(b => b.HoraInicio)
+            .ToListAsync();
+
+        var ics = GerarCalendarioIcs(blocos);
+        var bytes = Encoding.UTF8.GetBytes(ics);
+        var nome = $"caderno-vivo-calendario-{DateTime.Today:yyyy-MM-dd}.ics";
+        return File(bytes, "text/calendar; charset=utf-8", nome);
+    }
+
     private async Task CarregarResumo()
     {
         var hoje = DateTime.Today;
@@ -229,5 +248,69 @@ public class IndexModel : PageModel
                         .Select(d => d.Descricao)
                 })
         };
+    }
+
+    private static string GerarCalendarioIcs(List<BlocoEstudo> blocos)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine("BEGIN:VCALENDAR");
+        sb.AppendLine("VERSION:2.0");
+        sb.AppendLine("PRODID:-//Caderno Vivo//Agenda de Estudos//PT-BR");
+        sb.AppendLine("CALSCALE:GREGORIAN");
+        sb.AppendLine("METHOD:PUBLISH");
+        sb.AppendLine("X-WR-CALNAME:Caderno Vivo");
+        sb.AppendLine("X-WR-TIMEZONE:America/Sao_Paulo");
+
+        foreach (var bloco in blocos)
+        {
+            var inicio = CombinarDataHora(bloco.Data, bloco.HoraInicio);
+            var fim = CombinarDataHora(bloco.Data, bloco.HoraFim);
+            if (fim <= inicio)
+                fim = inicio.AddMinutes(50);
+
+            var vinculo = bloco.Materia?.Nome ?? bloco.Artigo?.Titulo ?? bloco.Projeto?.Titulo ?? bloco.Modulo;
+            var descricao = string.Join("\\n", new[]
+            {
+                bloco.Descricao,
+                $"Modulo: {bloco.Modulo}",
+                $"Vinculo: {vinculo}",
+                $"Status: {DiasHelper.LabelStatusBloco(bloco.Status)}"
+            }.Where(x => !string.IsNullOrWhiteSpace(x)));
+
+            sb.AppendLine("BEGIN:VEVENT");
+            sb.AppendLine($"UID:caderno-vivo-bloco-{bloco.Id}@local");
+            sb.AppendLine($"DTSTAMP:{DateTime.UtcNow:yyyyMMddTHHmmssZ}");
+            sb.AppendLine($"DTSTART:{inicio:yyyyMMddTHHmmss}");
+            sb.AppendLine($"DTEND:{fim:yyyyMMddTHHmmss}");
+            sb.AppendLine($"SUMMARY:{EscaparIcs(bloco.Titulo)}");
+            sb.AppendLine($"DESCRIPTION:{EscaparIcs(descricao)}");
+            sb.AppendLine($"CATEGORIES:{EscaparIcs(bloco.Modulo)}");
+            sb.AppendLine("BEGIN:VALARM");
+            sb.AppendLine("TRIGGER:-PT10M");
+            sb.AppendLine("ACTION:DISPLAY");
+            sb.AppendLine($"DESCRIPTION:{EscaparIcs($"Daqui 10 minutos: {bloco.Titulo}")}");
+            sb.AppendLine("END:VALARM");
+            sb.AppendLine("END:VEVENT");
+        }
+
+        sb.AppendLine("END:VCALENDAR");
+        return sb.ToString();
+    }
+
+    private static DateTime CombinarDataHora(DateTime data, string hora)
+    {
+        return TimeSpan.TryParse(hora, out var time)
+            ? data.Date.Add(time)
+            : data.Date.AddHours(19).AddMinutes(30);
+    }
+
+    private static string EscaparIcs(string? valor)
+    {
+        return (valor ?? "")
+            .Replace("\\", "\\\\")
+            .Replace(";", "\\;")
+            .Replace(",", "\\,")
+            .Replace("\r\n", "\\n")
+            .Replace("\n", "\\n");
     }
 }

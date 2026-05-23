@@ -17,9 +17,7 @@ public class DetalhesModel : PageModel
 
     [BindProperty] public RoadmapItem NovoRoadmap { get; set; } = new();
     [BindProperty] public AulaArtigo NovaAula { get; set; } = new();
-    [BindProperty] public TarefaArtigo NovaTarefa { get; set; } = new();
     [BindProperty] public Insight NovoInsight { get; set; } = new();
-    [BindProperty] public DuvidaArtigo NovaDuvida { get; set; } = new();
 
     [BindProperty] public string? UltimoPonto { get; set; }
     [BindProperty] public int Progresso { get; set; }
@@ -106,20 +104,6 @@ public class DetalhesModel : PageModel
         return RedirectToPage(new { id });
     }
 
-    public async Task<IActionResult> OnPostAddTarefaAsync(int id)
-    {
-        var artigo = await CarregarArtigo(id);
-        if (artigo == null) return NotFound();
-        Artigo = artigo;
-
-        NovaTarefa.ArtigoId = id;
-        NovaTarefa.DataCriacao = DateTime.Now;
-        _db.TarefasArtigo.Add(NovaTarefa);
-        await _db.SaveChangesAsync();
-        TempData["Sucesso"] = "Tarefa adicionada.";
-        return RedirectToPage(new { id });
-    }
-
     public async Task<IActionResult> OnPostAddInsightAsync(int id)
     {
         var artigo = await CarregarArtigo(id);
@@ -141,38 +125,10 @@ public class DetalhesModel : PageModel
         return RedirectToPage(new { id });
     }
 
-    public async Task<IActionResult> OnPostAddDuvidaAsync(int id)
-    {
-        var artigo = await CarregarArtigo(id);
-        if (artigo == null) return NotFound();
-        Artigo = artigo;
-
-        NovaDuvida.ArtigoId = id;
-        NovaDuvida.DataRegistro = DateTime.Now;
-        _db.DuvidasArtigo.Add(NovaDuvida);
-        await _db.SaveChangesAsync();
-        TempData["Sucesso"] = "Dúvida registrada.";
-        return RedirectToPage(new { id });
-    }
-
-    public async Task<IActionResult> OnPostResolverDuvidaAsync(int id, int duvidaId, string resolucao)
-    {
-        var d = await _db.DuvidasArtigo.FindAsync(duvidaId);
-        if (d != null)
-        {
-            d.Resolvida = true;
-            d.Resolucao = resolucao;
-            await _db.SaveChangesAsync();
-        }
-        return RedirectToPage(new { id });
-    }
-
     private async Task<Artigo?> CarregarArtigo(int id) =>
         await _db.Artigos
             .Include(a => a.Roadmap.OrderBy(r => r.Ordem))
             .Include(a => a.Aulas.OrderBy(au => au.Ordem))
-            .Include(a => a.Tarefas.OrderBy(t => t.DataHoraLimite))
             .Include(a => a.Insights.OrderByDescending(i => i.DataRegistro))
-            .Include(a => a.Duvidas.OrderBy(d => d.Resolvida).ThenByDescending(d => d.DataRegistro))
             .FirstOrDefaultAsync(a => a.Id == id);
 }

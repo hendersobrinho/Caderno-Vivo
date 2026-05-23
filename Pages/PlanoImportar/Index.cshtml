@@ -1,50 +1,224 @@
 @page
 @model CadernoVivo.Pages.PlanoImportar.IndexModel
 @{
-    ViewData["Title"] = "Importar Plano";
+    ViewData["Title"] = "Cronograma";
 }
 
 @section Breadcrumb {
-    <li class="breadcrumb-item active">Importar Plano</li>
+    <li class="breadcrumb-item active">Cronograma</li>
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h4 class="fw-bold mb-0"><i class="bi bi-cloud-upload me-2 text-primary"></i>Importar Plano do ChatGPT</h4>
+<div class="schedule-hero mb-4">
+    <div>
+        <div class="dash-eyebrow">Agenda de estudos</div>
+        <h3>Monte seu cronograma sem sofrimento</h3>
+        <p>
+            Use importação quando a IA gerar a semana inteira. Use bloco manual quando você só quer encaixar uma aula,
+            revisão, trabalho ou prática avulsa.
+        </p>
+    </div>
+    <div class="schedule-steps">
+        <span><strong>1</strong> importar JSON</span>
+        <span><strong>2</strong> ou adicionar manual</span>
+        <span><strong>3</strong> acompanhar no Hoje</span>
+    </div>
 </div>
 
-<div class="row g-4">
-    <div class="col-lg-7">
-        <div class="card border-0 shadow-sm">
-            <div class="card-body">
-                <p class="text-muted small mb-3">
-                    Cole o JSON gerado pelo ChatGPT com o plano da semana ou do dia. O sistema criará os blocos automaticamente e tentará vincular às matérias e artigos cadastrados pelo nome.
-                </p>
-                <form method="post">
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">JSON do Plano</label>
-                        <textarea asp-for="JsonTexto" class="form-control font-monospace"
-                                  rows="18" placeholder="Cole o JSON aqui..."></textarea>
-                    </div>
-                    <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-upload me-2"></i>Importar Blocos
-                        </button>
-                        <button type="button" class="btn btn-outline-secondary" onclick="inserirExemplo()">
-                            <i class="bi bi-code-slash me-1"></i>Ver exemplo
-                        </button>
-                    </div>
-                </form>
+<div class="row g-4 align-items-start">
+    <div class="col-xl-7">
+        <section class="schedule-card">
+            <div class="schedule-card-head">
+                <div>
+                    <div class="dash-eyebrow">Caminho rápido</div>
+                    <h5>Importar semana pronta</h5>
+                    <p>Para quando você pedir para a IA montar vários dias de estudo.</p>
+                </div>
+                <i class="bi bi-cloud-upload"></i>
             </div>
-        </div>
+
+            <form method="post" enctype="multipart/form-data">
+                <div class="callout-soft mb-3">
+                    <strong>Quando usar?</strong>
+                    <span>Quando você tem um JSON completo com vários blocos. O app cria a fila, ignora duplicatas e cria matérias automaticamente pelo nome.</span>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Arquivo JSON</label>
+                    <input asp-for="ArquivoJson" type="file" class="form-control" accept=".json,application/json" />
+                    <div class="form-text">Mais prático: baixe o JSON gerado pela IA e selecione aqui.</div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Ou cole o JSON aqui</label>
+                    <textarea asp-for="JsonTexto" class="form-control font-monospace"
+                              rows="14" placeholder="{ ... }"></textarea>
+                </div>
+
+                <div class="d-flex gap-2 flex-wrap">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-upload me-2"></i>Importar cronograma
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="inserirExemplo()">
+                        <i class="bi bi-code-slash me-1"></i>Inserir exemplo
+                    </button>
+                </div>
+            </form>
+        </section>
     </div>
 
-    <div class="col-lg-5">
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-transparent border-0">
-                <h6 class="fw-bold mb-0"><i class="bi bi-info-circle me-2 text-info"></i>Formato esperado</h6>
+    <div class="col-xl-5">
+        <section class="schedule-card manual">
+            <div class="schedule-card-head">
+                <div>
+                    <div class="dash-eyebrow">Caminho simples</div>
+                    <h5>Adicionar bloco manual</h5>
+                    <p>Para encaixar uma aula, revisão ou tarefa pontual sem JSON.</p>
+                </div>
+                <i class="bi bi-plus-circle"></i>
             </div>
-            <div class="card-body">
-                <pre class="bg-light rounded p-3 small" style="font-size:0.78rem; overflow-x:auto"><code>{
+
+            <form method="post" asp-page-handler="AdicionarBlocoManual">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Data</label>
+                        <input asp-for="BlocoManual.Data" type="text" class="form-control"
+                               value="@Model.BlocoManual.Data.ToString("dd/MM/yyyy")"
+                               placeholder="dd/mm/aaaa" inputmode="numeric" data-br-date />
+                        <div class="form-text">Ex.: 23/05/2026.</div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold">Início</label>
+                        <input asp-for="BlocoManual.HoraInicio" type="text" class="form-control"
+                               placeholder="19:30" inputmode="numeric" data-br-time />
+                        <div class="form-text">24h: 19:30</div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold">Fim</label>
+                        <input asp-for="BlocoManual.HoraFim" type="text" class="form-control"
+                               placeholder="21:00" inputmode="numeric" data-br-time />
+                        <div class="form-text">24h: 21:00</div>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">Título do bloco *</label>
+                        <input asp-for="BlocoManual.Titulo" class="form-control form-control-lg"
+                               placeholder="Ex.: Estatística Aula 2 - exercícios de dispersão" />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">O que precisa fazer?</label>
+                        <textarea asp-for="BlocoManual.Descricao" class="form-control" rows="4"
+                                  placeholder="Escreva o objetivo de forma bem prática: assistir vídeo, ler PDF, resolver questões, revisar erro, avançar checklist..."></textarea>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Tipo</label>
+                        <select asp-for="BlocoManual.Modulo" class="form-select">
+                            <option value="Faculdade">Faculdade</option>
+                            <option value="Projeto">Projeto</option>
+                            <option value="Geral">Geral / avulso</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Matéria</label>
+                        <select asp-for="BlocoManual.MateriaId" class="form-select">
+                            <option value="">Sem matéria</option>
+                            @foreach (var materia in Model.Materias)
+                            {
+                                <option value="@materia.Id">@materia.Nome</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">Projeto, se for trabalho/entrega</label>
+                        <select asp-for="BlocoManual.ProjetoId" class="form-select">
+                            <option value="">Sem projeto</option>
+                            @foreach (var projeto in Model.Projetos)
+                            {
+                                <option value="@projeto.Id">@projeto.Titulo</option>
+                            }
+                        </select>
+                        <div class="form-text">Projetos substituem aquela ideia antiga de tarefas/artigos soltos.</div>
+                    </div>
+                    <div class="col-12">
+                        <button class="btn btn-primary w-100" type="submit">
+                            <i class="bi bi-calendar-plus me-1"></i>Adicionar na agenda
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </section>
+
+        <section class="schedule-card compact mt-3">
+            <div class="schedule-card-head">
+                <div>
+                    <div class="dash-eyebrow">Prompt pronto</div>
+                    <h5>Gerar período completo com IA</h5>
+                </div>
+                <i class="bi bi-chat-left-text"></i>
+            </div>
+            <p class="small text-muted">
+                Troque as datas no formato brasileiro <strong>dd/mm/aaaa</strong>, informe a aula inicial e anexe o PDF.
+                Horários devem ser em formato 24 horas, como <strong>19:30</strong>.
+            </p>
+            <textarea id="promptFaculdade" class="form-control font-monospace small" rows="12" readonly></textarea>
+            <button class="btn btn-sm btn-outline-primary mt-2" onclick="copiarPrompt()">
+                <i class="bi bi-clipboard me-1"></i>Copiar prompt
+            </button>
+        </section>
+
+        <section class="schedule-card danger compact mt-3">
+            <div class="schedule-card-head">
+                <div>
+                    <div class="dash-eyebrow">Manutenção</div>
+                    <h5>Limpar agenda</h5>
+                </div>
+                <i class="bi bi-trash3"></i>
+            </div>
+            <p class="small text-muted">Use só quando for substituir um cronograma ruim ou reimportar uma semana corrigida.</p>
+            <form method="post" asp-page-handler="LimparPeriodo" class="mb-3"
+                  onsubmit="return confirm('Remover os blocos desse período?')">
+                <div class="row g-2">
+                    <div class="col-6">
+                        <label class="form-label small fw-semibold">Início</label>
+                        <input asp-for="LimparInicio" type="text" class="form-control form-control-sm"
+                               placeholder="dd/mm/aaaa" inputmode="numeric" data-br-date />
+                        <div class="form-text">dd/mm/aaaa</div>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small fw-semibold">Fim</label>
+                        <input asp-for="LimparFim" type="text" class="form-control form-control-sm"
+                               placeholder="dd/mm/aaaa" inputmode="numeric" data-br-date />
+                        <div class="form-text">dd/mm/aaaa</div>
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-sm btn-outline-danger w-100">
+                            Limpar período selecionado
+                        </button>
+                    </div>
+                </div>
+            </form>
+            <div class="d-flex gap-2 flex-wrap">
+                <form method="post" asp-page-handler="LimparBlocosFuturos"
+                      onsubmit="return confirm('Remover todos os blocos de hoje em diante?')">
+                    <button type="submit" class="btn btn-sm btn-outline-danger">Limpar de hoje em diante</button>
+                </form>
+                <form method="post" asp-page-handler="LimparTodosBlocos"
+                      onsubmit="return confirm('Remover TODOS os blocos da agenda? Esta ação não desfaz.')">
+                    <button type="submit" class="btn btn-sm btn-danger">Limpar tudo</button>
+                </form>
+            </div>
+        </section>
+    </div>
+</div>
+
+<section class="schedule-format mt-4">
+    <div>
+        <h6 class="fw-bold mb-2"><i class="bi bi-braces me-2 text-primary"></i>Formato JSON esperado</h6>
+        <p class="text-muted small mb-0">
+            O campo <code>materia</code> pode vir preenchido. Para trabalhos e entregas avulsas, prefira criar um projeto
+            e vincular blocos manuais a ele. Na conversa use datas em <strong>dd/mm/aaaa</strong>; dentro do JSON use
+            <strong>aaaa-mm-dd</strong>. Horários sempre em <strong>HH:mm</strong> 24 horas.
+        </p>
+    </div>
+    <pre class="mb-0"><code>{
   "tipo": "plano",
   "semana_inicio": "2026-05-25",
   "dias": [
@@ -52,59 +226,73 @@
       "data": "2026-05-25",
       "blocos": [
         {
-          "inicio": "08:00",
-          "fim": "10:00",
-          "titulo": "Cálculo – Derivadas",
-          "descricao": "Revisar cap. 3 e resolver exercícios",
+          "inicio": "19:30",
+          "fim": "21:00",
+          "titulo": "Estatística Aula 2 - exercícios",
+          "descricao": "Resolver questões sobre medidas de dispersão e anotar dúvidas",
           "modulo": "Faculdade",
-          "materia": "Cálculo I",
+          "materia": "Estatística",
           "artigo": null
-        },
-        {
-          "inicio": "10:30",
-          "fim": "12:00",
-          "titulo": "Artigo – Introdução",
-          "descricao": "Escrever seção 1",
-          "modulo": "Artigo",
-          "materia": null,
-          "artigo": "Clean Architecture em C#"
         }
       ]
     }
   ]
 }</code></pre>
-                <hr class="my-2" />
-                <ul class="small text-muted mb-0">
-                    <li><code>tipo</code>: deve ser <strong>"plano"</strong></li>
-                    <li><code>materia</code> / <code>artigo</code>: nome exato cadastrado (ou null)</li>
-                    <li>Duplicatas (mesma data + início + título) são ignoradas automaticamente</li>
-                    <li><code>modulo</code>: "Faculdade", "Artigo" ou "Geral"</li>
-                </ul>
-            </div>
-        </div>
-
-        <div class="card border-0 shadow-sm mt-3">
-            <div class="card-header bg-transparent border-0">
-                <h6 class="fw-bold mb-0"><i class="bi bi-chat-left-text me-2 text-success"></i>Prompt sugerido para o ChatGPT</h6>
-            </div>
-            <div class="card-body">
-                <p class="small text-muted mb-2">Use este prompt para gerar um plano compatível:</p>
-                <div class="bg-light rounded p-2 small font-monospace" style="font-size:0.78rem">
-                    Monte um plano de estudos para a semana de [DATA]. Retorne APENAS um JSON válido no formato:<br>
-                    { "tipo": "plano", "semana_inicio": "YYYY-MM-DD", "dias": [...] }<br>
-                    onde cada dia tem "data" e "blocos" com os campos: inicio, fim, titulo, descricao, modulo (Faculdade/Artigo/Geral), materia (ou null), artigo (ou null).
-                </div>
-                <button class="btn btn-sm btn-outline-success mt-2" onclick="copiarPrompt()">
-                    <i class="bi bi-clipboard me-1"></i>Copiar prompt
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
+</section>
 
 @section Scripts {
 <script>
-var promptSugerido = 'Monte um plano de estudos para a semana de [DATA]. Retorne APENAS um JSON válido no formato: { "tipo": "plano", "semana_inicio": "YYYY-MM-DD", "dias": [{ "data": "YYYY-MM-DD", "blocos": [{ "inicio": "HH:mm", "fim": "HH:mm", "titulo": "...", "descricao": "...", "modulo": "Faculdade|Artigo|Geral", "materia": "nome ou null", "artigo": "nome ou null" }] }] }';
+var promptSugerido = `Monte um cronograma de estudos da FACULDADE para o período completo de [DD/MM/AAAA] a [DD/MM/AAAA].
+
+Use datas no formato brasileiro quando estiver interpretando meu pedido: DD/MM/AAAA.
+Use horários em formato 24 horas: HH:mm (ex.: 19:30, 20:30, 21:00).
+Importante: no JSON final, datas devem vir no formato técnico AAAA-MM-DD para importação no sistema.
+
+O PDF anexado contém todas as matérias e aulas do período. Leia o PDF e identifique automaticamente:
+- Nome de cada matéria e professor
+- Quantidade total de aulas de cada matéria
+- Os Temas 1 a 5 de cada aula
+
+Regras fixas de estrutura semanal:
+- Cada matéria tem 1 aula nova por semana, começando pela Aula [N] na semana de [DD/MM/AAAA]
+- Segunda-feira: assistir o vídeo de cada matéria (1 bloco de ~60 min por matéria, a partir das 19:30)
+- Terça a sexta: distribuir os Temas 1 a 5 do PDF dessa aula ao longo dos dias, alternando as matérias (1 bloco por matéria por noite, ~50 min cada, a partir das 19:30)
+- Sábado: revisão acumulada + prática sem consulta (flashcards, exercícios, questões)
+- Última semana do período: sem aula nova — usar os dias para revisão geral, simulado e correção de erros antes da avaliação
+
+Regras de qualidade dos blocos:
+- Blocos de 50 a 90 minutos, nunca genéricos
+- Títulos e descrições devem dizer exatamente o que fazer com base no conteúdo real do PDF
+- Incluir prática quando fizer sentido: exercícios, resumo, flashcards, questões, aplicação
+- Não criar blocos irreais ou sobrecarregados
+- Descrições devem referenciar exemplos, fórmulas e exercícios presentes no próprio PDF
+
+Retorne APENAS um JSON válido, sem markdown, sem explicação e sem texto fora do JSON, cobrindo todos os dias do período do início ao fim.
+
+Formato obrigatório:
+{
+  "tipo": "plano",
+  "semana_inicio": "AAAA-MM-DD",
+  "periodo": "AAAA-MM-DD a AAAA-MM-DD",
+  "dias": [
+    {
+      "data": "AAAA-MM-DD",
+      "blocos": [
+        {
+          "inicio": "19:30",
+          "fim": "20:30",
+          "titulo": "Nome claro do bloco",
+          "descricao": "Ação prática e específica do que estudar/fazer",
+          "modulo": "Faculdade",
+          "materia": "Nome exato da matéria",
+          "artigo": null
+        }
+      ]
+    }
+  ]
+}`;
+
+document.getElementById('promptFaculdade').value = promptSugerido;
 
 function copiarPrompt() {
     navigator.clipboard.writeText(promptSugerido).then(function() {
@@ -116,25 +304,28 @@ function copiarPrompt() {
 
 function inserirExemplo() {
     var hoje = new Date();
-    var amanha = new Date(hoje);
-    amanha.setDate(amanha.getDate() + 1);
-    var fmt = d => d.toISOString().split('T')[0];
+    var fmt = function(d) {
+        var ano = d.getFullYear();
+        var mes = String(d.getMonth() + 1).padStart(2, '0');
+        var dia = String(d.getDate()).padStart(2, '0');
+        return ano + '-' + mes + '-' + dia;
+    };
 
     var exemplo = {
-        "tipo": "plano",
-        "semana_inicio": fmt(hoje),
-        "dias": [
+        tipo: "plano",
+        semana_inicio: fmt(hoje),
+        dias: [
             {
-                "data": fmt(hoje),
-                "blocos": [
+                data: fmt(hoje),
+                blocos: [
                     {
-                        "inicio": "08:00",
-                        "fim": "10:00",
-                        "titulo": "Bloco de Exemplo",
-                        "descricao": "Descrição do que será feito",
-                        "modulo": "Geral",
-                        "materia": null,
-                        "artigo": null
+                        inicio: "19:30",
+                        fim: "21:00",
+                        titulo: "Bloco de exemplo",
+                        descricao: "Descrição prática do que será feito",
+                        modulo: "Faculdade",
+                        materia: null,
+                        artigo: null
                     }
                 ]
             }

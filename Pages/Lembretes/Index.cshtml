@@ -1,0 +1,165 @@
+@page
+@model CadernoVivo.Pages.Lembretes.IndexModel
+@using CadernoVivo.Helpers
+@using CadernoVivo.Models
+@{
+    ViewData["Title"] = "Lembretes";
+}
+
+@section Breadcrumb {
+    <li class="breadcrumb-item active">Lembretes</li>
+}
+
+<div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-2">
+    <div>
+        <h4 class="fw-bold mb-1"><i class="bi bi-pin-angle-fill text-primary me-2"></i>Lembretes</h4>
+        <small class="text-muted">Coisas importantes, avulsas ou vinculadas a matérias, projetos e artigos.</small>
+    </div>
+    <button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#novoLembrete">
+        <i class="bi bi-plus-lg"></i>Novo lembrete
+    </button>
+</div>
+
+<div class="collapse mb-4 show" id="novoLembrete">
+    <div class="reminder-composer">
+        <form method="post" asp-page-handler="Criar">
+            <div class="row g-3">
+                <div class="col-lg-5">
+                    <label class="form-label fw-semibold">O que não pode esquecer?</label>
+                    <input asp-for="NovoLembrete.Titulo" class="form-control form-control-lg"
+                           placeholder="Ex.: enviar trabalho, revisar prova, pagar inscrição..." />
+                </div>
+                <div class="col-lg-3">
+                    <label class="form-label fw-semibold">Prazo</label>
+                    <input asp-for="NovoLembrete.DataLimite" type="text" class="form-control form-control-lg"
+                           placeholder="dd/mm/aaaa" inputmode="numeric" data-br-date />
+                </div>
+                <div class="col-lg-2">
+                    <label class="form-label fw-semibold">Prioridade</label>
+                    <select asp-for="NovoLembrete.Prioridade" class="form-select form-select-lg">
+                        <option value="@PrioridadeProjeto.Baixa">Baixa</option>
+                        <option value="@PrioridadeProjeto.Media" selected>Média</option>
+                        <option value="@PrioridadeProjeto.Alta">Alta</option>
+                        <option value="@PrioridadeProjeto.Urgente">Urgente</option>
+                    </select>
+                </div>
+                <div class="col-lg-2 d-flex align-items-end">
+                    <div class="form-check reminder-check">
+                        <input asp-for="NovoLembrete.Destaque" class="form-check-input" />
+                        <label asp-for="NovoLembrete.Destaque" class="form-check-label">Fixar no topo</label>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <label class="form-label fw-semibold">Vínculo opcional</label>
+                    <select asp-for="VinculoSelecionado" class="form-select">
+                        <option value="">Avulso, sem vínculo</option>
+                        <optgroup label="Matérias">
+                            @foreach (var materia in Model.Materias)
+                            {
+                                <option value="materia:@materia.Id">Matéria · @materia.Nome</option>
+                            }
+                        </optgroup>
+                        <optgroup label="Projetos">
+                            @foreach (var projeto in Model.Projetos)
+                            {
+                                <option value="projeto:@projeto.Id">Projeto · @projeto.Titulo</option>
+                            }
+                        </optgroup>
+                    </select>
+                </div>
+                <div class="col-12">
+                    <label class="form-label fw-semibold">Detalhes</label>
+                    <textarea asp-for="NovoLembrete.Descricao" class="form-control" rows="3"
+                              placeholder="Contexto rápido, link, observação, critério de pronto..."></textarea>
+                </div>
+                <div class="col-12 text-end">
+                    <button class="btn btn-primary" type="submit">
+                        <i class="bi bi-pin-angle"></i>Salvar lembrete
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+@if (Model.LembretesDestaque.Any())
+{
+    <section class="reminder-spotlight mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <div class="dash-eyebrow">Destaques</div>
+                <h5 class="fw-bold mb-0">O que merece atenção primeiro</h5>
+            </div>
+            <span class="badge bg-primary">@Model.LembretesDestaque.Count item(ns)</span>
+        </div>
+        <div class="reminder-grid">
+            @foreach (var lembrete in Model.LembretesDestaque)
+            {
+                <partial name="_LembreteCard" model="lembrete" />
+            }
+        </div>
+    </section>
+}
+
+<div class="row g-3">
+    <div class="col-lg-8">
+        <div class="card dashboard-panel">
+            <div class="card-header">
+                <i class="bi bi-list-stars me-2 text-primary"></i>Lembretes abertos
+            </div>
+            <div class="card-body p-0">
+                @if (!Model.LembretesAbertos.Any())
+                {
+                    <div class="empty-panel">
+                        <i class="bi bi-check2-circle"></i>
+                        <span>Nenhum lembrete aberto. Raro e bonito.</span>
+                    </div>
+                }
+                else
+                {
+                    <div class="reminder-list">
+                        @foreach (var lembrete in Model.LembretesAbertos)
+                        {
+                            <partial name="_LembreteRow" model="lembrete" />
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card dashboard-panel">
+            <div class="card-header">
+                <i class="bi bi-check2-circle me-2 text-success"></i>Concluídos recentes
+            </div>
+            <div class="card-body p-0">
+                @if (!Model.LembretesConcluidos.Any())
+                {
+                    <div class="empty-panel">
+                        <i class="bi bi-inbox"></i>
+                        <span>Nada concluído ainda.</span>
+                    </div>
+                }
+                else
+                {
+                    <div class="compact-list">
+                        @foreach (var lembrete in Model.LembretesConcluidos)
+                        {
+                            <div class="compact-row">
+                                <div>
+                                    <div class="fw-semibold small">@lembrete.Titulo</div>
+                                    <small class="text-muted">@lembrete.DataConclusao?.ToString("dd/MM HH:mm")</small>
+                                </div>
+                                <form method="post" asp-page-handler="Reabrir">
+                                    <input type="hidden" name="id" value="@lembrete.Id" />
+                                    <button class="btn btn-sm btn-outline-secondary" type="submit">Reabrir</button>
+                                </form>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
