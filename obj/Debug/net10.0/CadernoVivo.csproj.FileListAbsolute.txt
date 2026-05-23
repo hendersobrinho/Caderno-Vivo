@@ -115,7 +115,6 @@
 /home/hnd/Projects/csharp/CadernoVivo/obj/Debug/net10.0/rjsmrazor.dswa.cache.json
 /home/hnd/Projects/csharp/CadernoVivo/obj/Debug/net10.0/rjsmcshtml.dswa.cache.json
 /home/hnd/Projects/csharp/CadernoVivo/obj/Debug/net10.0/scopedcss/bundle/CadernoVivo.styles.css
-/home/hnd/Projects/csharp/CadernoVivo/obj/Debug/net10.0/compressed/sczm5erflj-{0}-7u9lfvemzy-7u9lfvemzy.gz
 /home/hnd/Projects/csharp/CadernoVivo/obj/Debug/net10.0/staticwebassets.build.json
 /home/hnd/Projects/csharp/CadernoVivo/obj/Debug/net10.0/staticwebassets.build.json.cache
 /home/hnd/Projects/csharp/CadernoVivo/obj/Debug/net10.0/staticwebassets.development.json
@@ -127,3 +126,5 @@
 /home/hnd/Projects/csharp/CadernoVivo/obj/Debug/net10.0/CadernoVivo.pdb
 /home/hnd/Projects/csharp/CadernoVivo/obj/Debug/net10.0/CadernoVivo.genruntimeconfig.cache
 /home/hnd/Projects/csharp/CadernoVivo/obj/Debug/net10.0/ref/CadernoVivo.dll
+/home/hnd/Projects/csharp/CadernoVivo/obj/Debug/net10.0/CadernoVivo.sourcelink.json
+/home/hnd/Projects/csharp/CadernoVivo/obj/Debug/net10.0/compressed/sczm5erflj-{0}-1irtacqxvo-1irtacqxvo.gz

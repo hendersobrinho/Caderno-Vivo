@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("CadernoVivo")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c1c9bc685c3c9db8009461863bdd75b2da6a8bdc")]
 [assembly: System.Reflection.AssemblyProductAttribute("CadernoVivo")]
 [assembly: System.Reflection.AssemblyTitleAttribute("CadernoVivo")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

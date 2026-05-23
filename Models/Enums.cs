@@ -26,3 +26,14 @@ public enum TipoMaterial
     Link = 3,
     Outro = 4
 }
+
+public enum StatusBloco
+{
+    Agendado    = 0,
+    EmAndamento = 1,
+    Concluido   = 2,
+    Parcial     = 3,
+    NaoFeito    = 4,
+    Reagendado  = 5,
+    HoraExtra   = 6
+}

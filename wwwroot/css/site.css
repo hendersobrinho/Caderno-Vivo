@@ -110,6 +110,30 @@
     background: var(--sidebar-active);
 }
 
+#sidebar .nav-link-hoje {
+    color: #bfdbfe;
+    font-size: 0.9rem;
+    font-weight: 600;
+    border-left: 3px solid #3b82f6;
+    padding-left: calc(1.25rem - 3px);
+}
+
+#sidebar .nav-link-hoje:hover {
+    color: white;
+    background: rgba(59, 130, 246, 0.15);
+}
+
+#sidebar .nav-link-hoje.active {
+    background: #2563eb;
+    border-left-color: #93c5fd;
+}
+
+/* Bloco atual — destaque */
+.bloco-atual {
+    border: none;
+    box-shadow: 0 4px 20px rgba(59, 130, 246, 0.18);
+}
+
 /* ---------- Topbar ---------- */
 
 .topbar {

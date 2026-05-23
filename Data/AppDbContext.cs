@@ -16,6 +16,9 @@ public class AppDbContext : DbContext
     public DbSet<DuvidaFaculdade> DuvidasFaculdade => Set<DuvidaFaculdade>();
     public DbSet<Pendencia> Pendencias => Set<Pendencia>();
 
+    // Blocos de execução
+    public DbSet<BlocoEstudo> BloquesEstudo => Set<BlocoEstudo>();
+
     // Artigos
     public DbSet<Artigo> Artigos => Set<Artigo>();
     public DbSet<AulaArtigo> AulasArtigo => Set<AulaArtigo>();
@@ -38,6 +41,18 @@ public class AppDbContext : DbContext
             .HasOne(p => p.TarefaArtigo)
             .WithMany()
             .HasForeignKey(p => p.TarefaArtigoId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<BlocoEstudo>()
+            .HasOne(b => b.Materia)
+            .WithMany()
+            .HasForeignKey(b => b.MateriaId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<BlocoEstudo>()
+            .HasOne(b => b.Artigo)
+            .WithMany()
+            .HasForeignKey(b => b.ArtigoId)
             .OnDelete(DeleteBehavior.SetNull);
     }
 }

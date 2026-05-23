@@ -62,4 +62,43 @@ public static class DiasHelper
 
     public static bool GerarPendencia(StatusTarefa status) =>
         status is StatusTarefa.Parcial or StatusTarefa.NaoEncaixou;
+
+    public static string LabelStatusBloco(StatusBloco status) => status switch
+    {
+        StatusBloco.Agendado    => "Agendado",
+        StatusBloco.EmAndamento => "Em Andamento",
+        StatusBloco.Concluido   => "Concluído",
+        StatusBloco.Parcial     => "Parcial",
+        StatusBloco.NaoFeito    => "Não Feito",
+        StatusBloco.Reagendado  => "Reagendado",
+        StatusBloco.HoraExtra   => "Hora Extra",
+        _                       => "?"
+    };
+
+    public static string ClasseStatusBloco(StatusBloco status) => status switch
+    {
+        StatusBloco.Agendado    => "secondary",
+        StatusBloco.EmAndamento => "primary",
+        StatusBloco.Concluido   => "success",
+        StatusBloco.Parcial     => "warning",
+        StatusBloco.NaoFeito    => "danger",
+        StatusBloco.Reagendado  => "info",
+        StatusBloco.HoraExtra   => "dark",
+        _                       => "secondary"
+    };
+
+    public static string IconeStatusBloco(StatusBloco status) => status switch
+    {
+        StatusBloco.Agendado    => "bi-calendar",
+        StatusBloco.EmAndamento => "bi-hourglass-split",
+        StatusBloco.Concluido   => "bi-check-circle-fill",
+        StatusBloco.Parcial     => "bi-dash-circle",
+        StatusBloco.NaoFeito    => "bi-x-circle",
+        StatusBloco.Reagendado  => "bi-calendar-plus",
+        StatusBloco.HoraExtra   => "bi-clock-history",
+        _                       => "bi-circle"
+    };
+
+    public static bool BlocoGerarPendencia(StatusBloco status) =>
+        status is StatusBloco.Parcial or StatusBloco.NaoFeito;
 }

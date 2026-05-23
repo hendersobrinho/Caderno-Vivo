@@ -1,0 +1,146 @@
+@page
+@model CadernoVivo.Pages.PlanoImportar.IndexModel
+@{
+    ViewData["Title"] = "Importar Plano";
+}
+
+@section Breadcrumb {
+    <li class="breadcrumb-item active">Importar Plano</li>
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="fw-bold mb-0"><i class="bi bi-cloud-upload me-2 text-primary"></i>Importar Plano do ChatGPT</h4>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <p class="text-muted small mb-3">
+                    Cole o JSON gerado pelo ChatGPT com o plano da semana ou do dia. O sistema criará os blocos automaticamente e tentará vincular às matérias e artigos cadastrados pelo nome.
+                </p>
+                <form method="post">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">JSON do Plano</label>
+                        <textarea asp-for="JsonTexto" class="form-control font-monospace"
+                                  rows="18" placeholder="Cole o JSON aqui..."></textarea>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-upload me-2"></i>Importar Blocos
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" onclick="inserirExemplo()">
+                            <i class="bi bi-code-slash me-1"></i>Ver exemplo
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent border-0">
+                <h6 class="fw-bold mb-0"><i class="bi bi-info-circle me-2 text-info"></i>Formato esperado</h6>
+            </div>
+            <div class="card-body">
+                <pre class="bg-light rounded p-3 small" style="font-size:0.78rem; overflow-x:auto"><code>{
+  "tipo": "plano",
+  "semana_inicio": "2026-05-25",
+  "dias": [
+    {
+      "data": "2026-05-25",
+      "blocos": [
+        {
+          "inicio": "08:00",
+          "fim": "10:00",
+          "titulo": "Cálculo – Derivadas",
+          "descricao": "Revisar cap. 3 e resolver exercícios",
+          "modulo": "Faculdade",
+          "materia": "Cálculo I",
+          "artigo": null
+        },
+        {
+          "inicio": "10:30",
+          "fim": "12:00",
+          "titulo": "Artigo – Introdução",
+          "descricao": "Escrever seção 1",
+          "modulo": "Artigo",
+          "materia": null,
+          "artigo": "Clean Architecture em C#"
+        }
+      ]
+    }
+  ]
+}</code></pre>
+                <hr class="my-2" />
+                <ul class="small text-muted mb-0">
+                    <li><code>tipo</code>: deve ser <strong>"plano"</strong></li>
+                    <li><code>materia</code> / <code>artigo</code>: nome exato cadastrado (ou null)</li>
+                    <li>Duplicatas (mesma data + início + título) são ignoradas automaticamente</li>
+                    <li><code>modulo</code>: "Faculdade", "Artigo" ou "Geral"</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm mt-3">
+            <div class="card-header bg-transparent border-0">
+                <h6 class="fw-bold mb-0"><i class="bi bi-chat-left-text me-2 text-success"></i>Prompt sugerido para o ChatGPT</h6>
+            </div>
+            <div class="card-body">
+                <p class="small text-muted mb-2">Use este prompt para gerar um plano compatível:</p>
+                <div class="bg-light rounded p-2 small font-monospace" style="font-size:0.78rem">
+                    Monte um plano de estudos para a semana de [DATA]. Retorne APENAS um JSON válido no formato:<br>
+                    { "tipo": "plano", "semana_inicio": "YYYY-MM-DD", "dias": [...] }<br>
+                    onde cada dia tem "data" e "blocos" com os campos: inicio, fim, titulo, descricao, modulo (Faculdade/Artigo/Geral), materia (ou null), artigo (ou null).
+                </div>
+                <button class="btn btn-sm btn-outline-success mt-2" onclick="copiarPrompt()">
+                    <i class="bi bi-clipboard me-1"></i>Copiar prompt
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+var promptSugerido = 'Monte um plano de estudos para a semana de [DATA]. Retorne APENAS um JSON válido no formato: { "tipo": "plano", "semana_inicio": "YYYY-MM-DD", "dias": [{ "data": "YYYY-MM-DD", "blocos": [{ "inicio": "HH:mm", "fim": "HH:mm", "titulo": "...", "descricao": "...", "modulo": "Faculdade|Artigo|Geral", "materia": "nome ou null", "artigo": "nome ou null" }] }] }';
+
+function copiarPrompt() {
+    navigator.clipboard.writeText(promptSugerido).then(function() {
+        var btn = document.querySelector('[onclick="copiarPrompt()"]');
+        btn.innerHTML = '<i class="bi bi-check2 me-1"></i>Copiado!';
+        setTimeout(function() { btn.innerHTML = '<i class="bi bi-clipboard me-1"></i>Copiar prompt'; }, 2000);
+    });
+}
+
+function inserirExemplo() {
+    var hoje = new Date();
+    var amanha = new Date(hoje);
+    amanha.setDate(amanha.getDate() + 1);
+    var fmt = d => d.toISOString().split('T')[0];
+
+    var exemplo = {
+        "tipo": "plano",
+        "semana_inicio": fmt(hoje),
+        "dias": [
+            {
+                "data": fmt(hoje),
+                "blocos": [
+                    {
+                        "inicio": "08:00",
+                        "fim": "10:00",
+                        "titulo": "Bloco de Exemplo",
+                        "descricao": "Descrição do que será feito",
+                        "modulo": "Geral",
+                        "materia": null,
+                        "artigo": null
+                    }
+                ]
+            }
+        ]
+    };
+    document.getElementById('JsonTexto').value = JSON.stringify(exemplo, null, 2);
+}
+</script>
+}

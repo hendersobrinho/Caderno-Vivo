@@ -1,5 +1,6 @@
 using CadernoVivo.Data;
 using CadernoVivo.Models;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 
@@ -23,10 +24,12 @@ public class IndexModel : PageModel
     public List<Pendencia> UltimasPendencias { get; set; } = [];
     public List<Artigo> ArtigosEmProgresso { get; set; } = [];
 
-    public async Task OnGetAsync()
+    public async Task<IActionResult> OnGetAsync()
     {
-        var hoje = DateTime.Now;
-        var em7Dias = hoje.AddDays(7);
+        var hoje = DateTime.Today;
+        var temBlocosHoje = await _db.BloquesEstudo.AnyAsync(b => b.Data.Date == hoje);
+        if (temBlocosHoje) return RedirectToPage("/Hoje/Index");
+        var em7Dias = DateTime.Now.AddDays(7);
 
         TotalMaterias = await _db.Materias.CountAsync();
         TarefasFaculdadePendentes = await _db.TarefasFaculdade
@@ -63,5 +66,7 @@ public class IndexModel : PageModel
             .OrderByDescending(a => a.DataAtualizacao)
             .Take(4)
             .ToListAsync();
+
+        return Page();
     }
 }

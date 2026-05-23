@@ -20,6 +20,11 @@
 
         <ul class="nav flex-column mt-2">
             <li class="nav-item">
+                <a class="nav-link nav-link-hoje" asp-page="/Hoje/Index">
+                    <i class="bi bi-calendar-check-fill"></i> Hoje
+                </a>
+            </li>
+            <li class="nav-item">
                 <a class="nav-link" asp-page="/Index">
                     <i class="bi bi-speedometer2"></i> Dashboard
                 </a>
@@ -73,6 +78,19 @@
             <li class="nav-item">
                 <a class="nav-link" asp-page="/Artigos/Importar/Index">
                     <i class="bi bi-cloud-upload"></i> Importar JSON
+                </a>
+            </li>
+
+            <li class="nav-section">FERRAMENTAS</li>
+
+            <li class="nav-item">
+                <a class="nav-link" asp-page="/PlanoImportar/Index">
+                    <i class="bi bi-cloud-upload"></i> Importar Plano
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" asp-page="/Exportar/Index">
+                    <i class="bi bi-box-arrow-up"></i> Exportar
                 </a>
             </li>
         </ul>
