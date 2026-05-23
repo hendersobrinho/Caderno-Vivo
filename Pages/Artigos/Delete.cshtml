@@ -1,0 +1,36 @@
+@page "{id:int}"
+@model CadernoVivo.Pages.Artigos.DeleteModel
+@{
+    ViewData["Title"] = "Remover Artigo";
+}
+
+@section Breadcrumb {
+    <li class="breadcrumb-item"><a asp-page="Index">Artigos</a></li>
+    <li class="breadcrumb-item active">Remover</li>
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="fw-bold mb-0 text-danger">Remover Artigo</h4>
+    <a asp-page="Index" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>Voltar
+    </a>
+</div>
+
+<div class="card border-danger" style="max-width:500px">
+    <div class="card-body">
+        <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            Esta ação removerá o artigo e todos os dados associados (roadmap, aulas, tarefas, insights e dúvidas).
+        </div>
+        <h5>@Model.Artigo.Titulo</h5>
+        <p class="text-muted small">@Model.Artigo.Descricao</p>
+        <form method="post">
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-danger">
+                    <i class="bi bi-trash me-1"></i>Confirmar remoção
+                </button>
+                <a asp-page="Index" class="btn btn-outline-secondary">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>

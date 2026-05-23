@@ -1,0 +1,88 @@
+@page
+@model CadernoVivo.Pages.Faculdade.PlanoDaSemana.IndexModel
+@{
+    ViewData["Title"] = "Plano da Semana";
+    // Segunda a Sábado
+    var diasSemana = new[] { (1, "Segunda"), (2, "Terça"), (3, "Quarta"), (4, "Quinta"), (5, "Sexta"), (6, "Sábado") };
+    var hoje = (int)DateTime.Today.DayOfWeek;
+}
+
+@section Breadcrumb {
+    <li class="breadcrumb-item"><a asp-page="/Faculdade/Index">Faculdade</a></li>
+    <li class="breadcrumb-item active">Plano da Semana</li>
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="fw-bold mb-0"><i class="bi bi-calendar-week text-primary me-2"></i>Plano da Semana</h4>
+    <small class="text-muted">Semana de @DateTime.Today.AddDays(-(int)DateTime.Today.DayOfWeek + 1).ToString("dd/MM") a @DateTime.Today.AddDays(-(int)DateTime.Today.DayOfWeek + 6).ToString("dd/MM")</small>
+</div>
+
+<!-- Grade de aulas -->
+<div class="grade-semana mb-4">
+    @foreach (var (diaNum, diaNome) in diasSemana)
+    {
+        var aulas = Model.Grade.ContainsKey(diaNum) ? Model.Grade[diaNum] : [];
+        var isHoje = diaNum == hoje;
+        <div class="dia-card @(isHoje ? "border border-primary" : "")">
+            <div class="dia-header d-flex justify-content-between">
+                <span>@diaNome</span>
+                @if (isHoje) { <span class="badge bg-primary" style="font-size:.6rem">Hoje</span> }
+            </div>
+            @if (!aulas.Any())
+            {
+                <small class="text-muted">Sem aulas</small>
+            }
+            else
+            {
+                @foreach (var (aula, nome) in aulas.OrderBy(x => x.Aula.HoraInicio))
+                {
+                    <div class="aula-bloco">
+                        <div class="fw-semibold text-truncate">@nome</div>
+                        <div class="text-muted">@aula.HoraInicio – @aula.HoraFim</div>
+                        @if (aula.Sala != null) { <div class="text-muted" style="font-size:.7rem">@aula.Sala</div> }
+                    </div>
+                }
+            }
+        </div>
+    }
+</div>
+
+<!-- Tarefas desta semana -->
+<div class="card">
+    <div class="card-header">
+        <i class="bi bi-list-check me-2 text-warning"></i>Tarefas com prazo esta semana
+    </div>
+    <div class="card-body p-0">
+        @if (!Model.TarefasSemana.Any())
+        {
+            <div class="text-center text-muted py-4 small">Nenhuma tarefa com prazo esta semana.</div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                    <thead><tr><th>Tarefa</th><th>Matéria</th><th>Prazo</th><th>Status</th></tr></thead>
+                    <tbody>
+                        @foreach (var t in Model.TarefasSemana)
+                        {
+                            <tr>
+                                <td class="fw-semibold">@t.Titulo</td>
+                                <td><span class="badge bg-primary bg-opacity-10 text-primary">@t.Materia.Nome</span></td>
+                                <td class="small">@t.DataHoraLimite.ToString("ddd dd/MM HH:mm", new System.Globalization.CultureInfo("pt-BR"))</td>
+                                <td><span class="badge bg-@DiasHelper.ClasseStatus(t.Status)">@DiasHelper.LabelStatus(t.Status)</span></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+@if (!Model.Materias.Any())
+{
+    <div class="alert alert-info mt-4">
+        <i class="bi bi-info-circle me-2"></i>
+        Cadastre matérias e adicione aulas semanais para ver o plano aqui.
+    </div>
+}

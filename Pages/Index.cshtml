@@ -1,0 +1,187 @@
+@page
+@model CadernoVivo.Pages.IndexModel
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+@section Breadcrumb {
+    <li class="breadcrumb-item active">Dashboard</li>
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="fw-bold mb-0">Dashboard</h4>
+    <small class="text-muted">@DateTime.Now.ToString("dddd, dd 'de' MMMM 'de' yyyy", new System.Globalization.CultureInfo("pt-BR"))</small>
+</div>
+
+<!-- Stats -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-2">
+        <div class="stat-card stat-blue">
+            <i class="bi bi-mortarboard-fill stat-icon"></i>
+            <div>
+                <div class="stat-num">@Model.TotalMaterias</div>
+                <div class="stat-label">Matérias</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-2">
+        <div class="stat-card stat-amber">
+            <i class="bi bi-hourglass-split stat-icon"></i>
+            <div>
+                <div class="stat-num">@Model.TarefasFaculdadePendentes</div>
+                <div class="stat-label">Tarefas pendentes</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-2">
+        <div class="stat-card stat-purple">
+            <i class="bi bi-journal-text stat-icon"></i>
+            <div>
+                <div class="stat-num">@Model.TotalArtigos</div>
+                <div class="stat-label">Artigos</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-2">
+        <div class="stat-card stat-teal">
+            <i class="bi bi-pen stat-icon"></i>
+            <div>
+                <div class="stat-num">@Model.ArtigosEmAndamento</div>
+                <div class="stat-label">Artigos em andamento</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-2">
+        <div class="stat-card stat-red">
+            <i class="bi bi-exclamation-triangle stat-icon"></i>
+            <div>
+                <div class="stat-num">@Model.PendenciasAbertas</div>
+                <div class="stat-label">Pendências</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-2">
+        <div class="stat-card stat-green">
+            <i class="bi bi-question-circle stat-icon"></i>
+            <div>
+                <div class="stat-num">@Model.DuvidasAbertas</div>
+                <div class="stat-label">Dúvidas abertas</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <!-- Tarefas próximas -->
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-calendar-check me-2 text-primary"></i>Tarefas dos próximos 7 dias</span>
+            </div>
+            <div class="card-body p-0">
+                @{
+                    var todasTarefas = Model.ProximasTarefasFaculdade
+                        .Select(t => new { Titulo = t.Titulo, Data = t.DataHoraLimite, Status = t.Status, Origem = t.Materia.Nome, Modulo = "F" })
+                        .Concat(Model.ProximasTarefasArtigo
+                            .Select(t => new { Titulo = t.Titulo, Data = t.DataHoraLimite, Status = t.Status, Origem = t.Artigo.Titulo, Modulo = "A" }))
+                        .OrderBy(t => t.Data)
+                        .ToList();
+                }
+                @if (!todasTarefas.Any())
+                {
+                    <div class="text-center text-muted py-4">
+                        <i class="bi bi-check-circle fs-2 d-block mb-2"></i>
+                        Nenhuma tarefa nos próximos 7 dias
+                    </div>
+                }
+                else
+                {
+                    <ul class="list-group list-group-flush">
+                        @foreach (var t in todasTarefas)
+                        {
+                            var atrasada = t.Data < DateTime.Now;
+                            <li class="list-group-item d-flex justify-content-between align-items-start py-2">
+                                <div>
+                                    <div class="fw-semibold small">@t.Titulo</div>
+                                    <div class="text-muted" style="font-size:0.75rem">
+                                        <span class="badge bg-@(t.Modulo == "F" ? "primary" : "purple") bg-opacity-10 text-@(t.Modulo == "F" ? "primary" : "secondary") me-1">@(t.Modulo == "F" ? "Faculdade" : "Artigo")</span>
+                                        @t.Origem
+                                    </div>
+                                </div>
+                                <div class="text-end">
+                                    <div class="small @(atrasada ? "text-danger fw-bold" : "text-muted")">
+                                        @t.Data.ToString("dd/MM HH:mm")
+                                    </div>
+                                    <span class="badge bg-@DiasHelper.ClasseStatus(t.Status)">@DiasHelper.LabelStatus(t.Status)</span>
+                                </div>
+                            </li>
+                        }
+                    </ul>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Pendências + Artigos -->
+    <div class="col-lg-6">
+        <!-- Pendências -->
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-exclamation-triangle me-2 text-danger"></i>Pendências em aberto</span>
+                <a asp-page="/Faculdade/Pendencias/Index" class="btn btn-sm btn-outline-secondary">Ver todas</a>
+            </div>
+            <div class="card-body p-0">
+                @if (!Model.UltimasPendencias.Any())
+                {
+                    <div class="text-center text-muted py-3 small">Sem pendências abertas</div>
+                }
+                else
+                {
+                    <ul class="list-group list-group-flush">
+                        @foreach (var p in Model.UltimasPendencias)
+                        {
+                            <li class="list-group-item py-2">
+                                <div class="d-flex justify-content-between">
+                                    <span class="small">@p.Descricao</span>
+                                    <span class="badge bg-secondary">@p.Origem</span>
+                                </div>
+                                <small class="text-muted">Criada em @p.DataCriacao.ToString("dd/MM/yyyy")</small>
+                            </li>
+                        }
+                    </ul>
+                }
+            </div>
+        </div>
+
+        <!-- Artigos em progresso -->
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-journal-pen me-2 text-purple"></i>Artigos em progresso
+            </div>
+            <div class="card-body p-0">
+                @if (!Model.ArtigosEmProgresso.Any())
+                {
+                    <div class="text-center text-muted py-3 small">Nenhum artigo em andamento</div>
+                }
+                else
+                {
+                    <ul class="list-group list-group-flush">
+                        @foreach (var a in Model.ArtigosEmProgresso)
+                        {
+                            <li class="list-group-item py-2">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <a asp-page="/Artigos/Detalhes" asp-route-id="@a.Id" class="fw-semibold small text-decoration-none">@a.Titulo</a>
+                                    <span class="badge bg-@DiasHelper.ClasseStatusArtigo(a.Status)">@DiasHelper.LabelStatusArtigo(a.Status)</span>
+                                </div>
+                                <div class="progress progresso-bar">
+                                    <div class="progress-bar" style="width:@a.Progresso%"></div>
+                                </div>
+                                <small class="text-muted">@a.Progresso% concluído</small>
+                            </li>
+                        }
+                    </ul>
+                }
+            </div>
+        </div>
+    </div>
+</div>

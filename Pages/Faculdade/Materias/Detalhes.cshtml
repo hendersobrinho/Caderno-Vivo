@@ -1,0 +1,328 @@
+@page "{id:int}"
+@model CadernoVivo.Pages.Faculdade.Materias.DetalhesModel
+@{
+    ViewData["Title"] = Model.Materia.Nome;
+    var m = Model.Materia;
+    var dias = new[] { "Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb" };
+}
+
+@section Breadcrumb {
+    <li class="breadcrumb-item"><a asp-page="/Faculdade/Index">Faculdade</a></li>
+    <li class="breadcrumb-item active">@m.Nome</li>
+}
+
+<!-- Header -->
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <h4 class="fw-bold mb-0">@m.Nome</h4>
+        @if (m.Professor != null) { <p class="text-muted mb-0"><i class="bi bi-person me-1"></i>@m.Professor</p> }
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-page="Edit" asp-route-id="@m.Id" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-pencil me-1"></i>Editar
+        </a>
+        <a asp-page="/Faculdade/Index" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>Voltar
+        </a>
+    </div>
+</div>
+
+<!-- Tabs -->
+<ul class="nav nav-tabs mb-3" id="materiaTabs" role="tablist">
+    <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#aulas-tab">
+        <i class="bi bi-calendar3 me-1"></i>Aulas (@m.AulasSemanais.Count)
+    </button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#materiais-tab">
+        <i class="bi bi-book me-1"></i>Materiais (@m.Materiais.Count)
+    </button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tarefas-tab">
+        <i class="bi bi-check2-square me-1"></i>Tarefas (@m.Tarefas.Count)
+    </button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#historico-tab">
+        <i class="bi bi-clock-history me-1"></i>Histórico (@m.Historico.Count)
+    </button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#duvidas-tab">
+        <i class="bi bi-question-circle me-1"></i>Dúvidas (@m.Duvidas.Count)
+    </button></li>
+</ul>
+
+<div class="tab-content">
+
+    <!-- Aulas Semanais -->
+    <div class="tab-pane fade show active" id="aulas-tab">
+        <div class="card">
+            <div class="card-body">
+                @if (m.AulasSemanais.Any())
+                {
+                    <div class="table-responsive mb-3">
+                        <table class="table table-sm align-middle">
+                            <thead><tr><th>Dia</th><th>Horário</th><th>Sala</th><th></th></tr></thead>
+                            <tbody>
+                                @foreach (var a in m.AulasSemanais.OrderBy(x => x.DiaSemana))
+                                {
+                                    <tr>
+                                        <td><span class="badge bg-primary">@DiasHelper.NomeDia(a.DiaSemana)</span></td>
+                                        <td>@a.HoraInicio – @a.HoraFim</td>
+                                        <td>@(a.Sala ?? "—")</td>
+                                        <td>
+                                            <form method="post" asp-page-handler="RemoverAula" asp-route-id="@m.Id" asp-route-aulaId="@a.Id">
+                                                <button class="btn btn-sm btn-outline-danger" onclick="return confirm('Remover esta aula?')">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                <hr />
+                <h6 class="section-title">Adicionar aula</h6>
+                <form method="post" asp-page-handler="AddAula" asp-route-id="@m.Id">
+                    <div class="row g-2">
+                        <div class="col-md-3">
+                            <label class="form-label small">Dia</label>
+                            <select asp-for="NovaAula.DiaSemana" class="form-select form-select-sm">
+                                @for (int i = 0; i < 7; i++)
+                                {
+                                    <option value="@i">@DiasHelper.NomeDia(i)</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small">Início</label>
+                            <input asp-for="NovaAula.HoraInicio" class="form-control form-control-sm" type="time" />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small">Fim</label>
+                            <input asp-for="NovaAula.HoraFim" class="form-control form-control-sm" type="time" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small">Sala</label>
+                            <input asp-for="NovaAula.Sala" class="form-control form-control-sm" placeholder="Opcional" />
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="submit" class="btn btn-sm btn-primary w-100">Adicionar</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Materiais -->
+    <div class="tab-pane fade" id="materiais-tab">
+        <div class="card">
+            <div class="card-body">
+                @if (m.Materiais.Any())
+                {
+                    <div class="table-responsive mb-3">
+                        <table class="table table-sm align-middle">
+                            <thead><tr><th>Nome</th><th>Tipo</th><th>URL</th><th></th></tr></thead>
+                            <tbody>
+                                @foreach (var mat in m.Materiais.OrderBy(x => x.Nome))
+                                {
+                                    <tr>
+                                        <td>@mat.Nome</td>
+                                        <td><span class="badge bg-secondary">@DiasHelper.LabelTipoMaterial(mat.Tipo)</span></td>
+                                        <td>
+                                            @if (mat.Url != null)
+                                            {
+                                                <a href="@mat.Url" target="_blank" class="small text-truncate d-inline-block" style="max-width:200px">@mat.Url</a>
+                                            }
+                                            else { <span class="text-muted">—</span> }
+                                        </td>
+                                        <td>
+                                            <form method="post" asp-page-handler="RemoverMaterial" asp-route-id="@m.Id" asp-route-materialId="@mat.Id">
+                                                <button class="btn btn-sm btn-outline-danger" onclick="return confirm('Remover?')">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                <hr />
+                <h6 class="section-title">Adicionar material</h6>
+                <form method="post" asp-page-handler="AddMaterial" asp-route-id="@m.Id">
+                    <div class="row g-2">
+                        <div class="col-md-4">
+                            <label class="form-label small">Nome</label>
+                            <input asp-for="NovoMaterial.Nome" class="form-control form-control-sm" placeholder="Nome do material" />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small">Tipo</label>
+                            <select asp-for="NovoMaterial.Tipo" class="form-select form-select-sm"
+                                    asp-items="Html.GetEnumSelectList<TipoMaterial>()"></select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small">URL / Caminho</label>
+                            <input asp-for="NovoMaterial.Url" class="form-control form-control-sm" placeholder="Opcional" />
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="submit" class="btn btn-sm btn-primary w-100">Adicionar</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tarefas -->
+    <div class="tab-pane fade" id="tarefas-tab">
+        <div class="card">
+            <div class="card-body">
+                @if (m.Tarefas.Any())
+                {
+                    <div class="table-responsive mb-3">
+                        <table class="table table-sm align-middle">
+                            <thead><tr><th>Título</th><th>Prazo</th><th>Status</th><th></th></tr></thead>
+                            <tbody>
+                                @foreach (var t in m.Tarefas.OrderBy(x => x.DataHoraLimite))
+                                {
+                                    var atrasada = t.Status != StatusTarefa.Concluida && t.DataHoraLimite < DateTime.Now;
+                                    <tr>
+                                        <td>@t.Titulo</td>
+                                        <td class="@(atrasada ? "text-danger fw-bold" : "")">@t.DataHoraLimite.ToString("dd/MM/yy HH:mm")</td>
+                                        <td><span class="badge bg-@DiasHelper.ClasseStatus(t.Status)">@DiasHelper.LabelStatus(t.Status)</span></td>
+                                        <td>
+                                            <a asp-page="/Faculdade/Tarefas/Edit" asp-route-id="@t.Id" class="btn btn-sm btn-outline-secondary">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                <hr />
+                <h6 class="section-title">Adicionar tarefa</h6>
+                <form method="post" asp-page-handler="AddTarefa" asp-route-id="@m.Id">
+                    <div class="row g-2">
+                        <div class="col-md-5">
+                            <label class="form-label small">Título</label>
+                            <input asp-for="NovaTarefa.Titulo" class="form-control form-control-sm" placeholder="Ex: Entregar lista 1" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small">Prazo</label>
+                            <input asp-for="NovaTarefa.DataHoraLimite" class="form-control form-control-sm" type="datetime-local" />
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end">
+                            <button type="submit" class="btn btn-sm btn-primary w-100">Adicionar</button>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <textarea asp-for="NovaTarefa.Descricao" class="form-control form-control-sm" rows="2" placeholder="Descrição (opcional)"></textarea>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Histórico -->
+    <div class="tab-pane fade" id="historico-tab">
+        <div class="card">
+            <div class="card-body">
+                @if (m.Historico.Any())
+                {
+                    <div class="mb-3">
+                        @foreach (var h in m.Historico.OrderByDescending(x => x.Data))
+                        {
+                            <div class="timeline-item">
+                                <div class="d-flex justify-content-between">
+                                    <strong class="small">@h.Titulo</strong>
+                                    <div class="d-flex gap-2 align-items-center">
+                                        <small class="text-muted">@h.Data.ToString("dd/MM/yyyy")</small>
+                                        <form method="post" asp-page-handler="RemoverHistorico" asp-route-id="@m.Id" asp-route-historicoId="@h.Id">
+                                            <button class="btn btn-sm btn-outline-danger py-0 px-1" onclick="return confirm('Remover?')">
+                                                <i class="bi bi-trash" style="font-size:.7rem"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                                @if (h.Conteudo != null) { <p class="small text-muted mb-0 mt-1">@h.Conteudo</p> }
+                            </div>
+                        }
+                    </div>
+                }
+                <hr />
+                <h6 class="section-title">Registrar aula</h6>
+                <form method="post" asp-page-handler="AddHistorico" asp-route-id="@m.Id">
+                    <div class="row g-2">
+                        <div class="col-md-3">
+                            <label class="form-label small">Data</label>
+                            <input asp-for="NovoHistorico.Data" class="form-control form-control-sm" type="date" />
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label small">Título / Tema</label>
+                            <input asp-for="NovoHistorico.Titulo" class="form-control form-control-sm" placeholder="Ex: Introdução a grafos" />
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <button type="submit" class="btn btn-sm btn-primary w-100">Registrar</button>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <textarea asp-for="NovoHistorico.Conteudo" class="form-control form-control-sm" rows="2" placeholder="Conteúdo abordado (opcional)"></textarea>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dúvidas -->
+    <div class="tab-pane fade" id="duvidas-tab">
+        <div class="card">
+            <div class="card-body">
+                @{
+                    var duv_abertas = m.Duvidas.Where(d => !d.Resolvida).ToList();
+                    var duv_resolvidas = m.Duvidas.Where(d => d.Resolvida).ToList();
+                }
+                @if (duv_abertas.Any())
+                {
+                    <h6 class="section-title">Em aberto</h6>
+                    @foreach (var d in duv_abertas)
+                    {
+                        <div class="card border-warning mb-2">
+                            <div class="card-body py-2 px-3">
+                                <p class="mb-1 small fw-semibold">@d.Descricao</p>
+                                <small class="text-muted">@d.DataRegistro.ToString("dd/MM/yyyy")</small>
+                                <form method="post" asp-page-handler="ResolverDuvida" asp-route-id="@m.Id" asp-route-duvidaId="@d.Id" class="mt-2 d-flex gap-2">
+                                    <input name="resolucao" class="form-control form-control-sm" placeholder="Resolução..." />
+                                    <button class="btn btn-sm btn-success text-nowrap">Resolver</button>
+                                </form>
+                            </div>
+                        </div>
+                    }
+                }
+                @if (duv_resolvidas.Any())
+                {
+                    <h6 class="section-title mt-3">Resolvidas</h6>
+                    @foreach (var d in duv_resolvidas)
+                    {
+                        <div class="card border-success border-opacity-25 mb-2">
+                            <div class="card-body py-2 px-3">
+                                <p class="mb-0 small text-decoration-line-through text-muted">@d.Descricao</p>
+                                @if (d.Resolucao != null) { <p class="mb-0 small text-success"><i class="bi bi-check-circle me-1"></i>@d.Resolucao</p> }
+                            </div>
+                        </div>
+                    }
+                }
+                <hr />
+                <h6 class="section-title">Registrar dúvida</h6>
+                <form method="post" asp-page-handler="AddDuvida" asp-route-id="@m.Id">
+                    <div class="d-flex gap-2">
+                        <textarea asp-for="NovaDuvida.Descricao" class="form-control form-control-sm" rows="2"
+                                  placeholder="Descreva a dúvida..."></textarea>
+                        <button type="submit" class="btn btn-sm btn-primary align-self-end">Registrar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+</div>

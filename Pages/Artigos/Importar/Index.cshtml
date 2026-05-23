@@ -1,0 +1,70 @@
+@page
+@model CadernoVivo.Pages.Artigos.Importar.IndexModel
+@{
+    ViewData["Title"] = "Importar JSON – Artigos";
+}
+
+@section Breadcrumb {
+    <li class="breadcrumb-item"><a asp-page="/Artigos/Index">Artigos</a></li>
+    <li class="breadcrumb-item active">Importar JSON</li>
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="fw-bold mb-0"><i class="bi bi-cloud-upload text-primary me-2"></i>Importar JSON – Artigos</h4>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">Enviar arquivo</div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label class="form-label">Arquivo JSON</label>
+                        <input type="file" name="arquivo" class="form-control" accept=".json" required />
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-upload me-1"></i>Importar
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">Formato esperado (tipo: artigo)</div>
+            <div class="card-body">
+                <pre class="small bg-light p-3 rounded" style="font-size:.75rem">{
+  "tipo": "artigo",
+  "titulo": "EF Core com SQLite",
+  "descricao": "Guia completo",
+  "tags": "csharp, efcore, sqlite",
+  "status": "EmDesenvolvimento",
+  "roadmap": [
+    { "titulo": "Conceitos básicos", "ordem": 1 },
+    { "titulo": "Configuração", "ordem": 2 }
+  ],
+  "aulas": [
+    { "titulo": "Intro ao EF Core",
+      "conteudo": "DbContext, DbSet...",
+      "ordem": 1 }
+  ],
+  "tarefas": [
+    { "titulo": "Ler docs oficiais",
+      "dataHoraLimite": "2025-06-20T18:00:00" }
+  ],
+  "insights": [
+    { "conteudo": "EF Core é eficiente!" }
+  ],
+  "duvidas": [
+    { "descricao": "Como fazer migrations?" }
+  ]
+}</pre>
+                <p class="small text-muted mt-2">
+                    <strong>status:</strong> Ideia, EmDesenvolvimento, Revisao, Publicado, Pausado
+                </p>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,103 @@
+@page
+@model CadernoVivo.Pages.Artigos.IndexModel
+@{
+    ViewData["Title"] = "Artigos";
+}
+
+@section Breadcrumb {
+    <li class="breadcrumb-item active">Artigos</li>
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="fw-bold mb-0"><i class="bi bi-journal-text text-primary me-2"></i>Artigos</h4>
+    <a asp-page="Create" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-1"></i>Novo artigo
+    </a>
+</div>
+
+@if (!Model.Artigos.Any())
+{
+    <div class="text-center py-5 text-muted">
+        <i class="bi bi-journal-plus display-4 d-block mb-3"></i>
+        <p>Nenhum artigo cadastrado ainda.</p>
+        <a asp-page="Create" class="btn btn-primary">Criar primeiro artigo</a>
+    </div>
+}
+else
+{
+    <div class="row g-3">
+        @foreach (var a in Model.Artigos)
+        {
+            var tarefasPendentes = a.Tarefas.Count(t => t.Status != StatusTarefa.Concluida);
+            var roadmapConcluido = a.Roadmap.Count(r => r.Concluido);
+            <div class="col-md-6 col-xl-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h5 class="card-title mb-0" style="font-size:1rem">@a.Titulo</h5>
+                            <span class="badge bg-@DiasHelper.ClasseStatusArtigo(a.Status) ms-2 text-nowrap">
+                                @DiasHelper.LabelStatusArtigo(a.Status)
+                            </span>
+                        </div>
+
+                        @if (a.Tags != null)
+                        {
+                            <div class="mb-2">
+                                @foreach (var tag in a.Tags.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                                {
+                                    <span class="badge bg-light text-secondary me-1">@tag.Trim()</span>
+                                }
+                            </div>
+                        }
+
+                        <!-- Progresso -->
+                        <div class="mb-2">
+                            <div class="d-flex justify-content-between small text-muted mb-1">
+                                <span>Progresso</span>
+                                <span>@a.Progresso%</span>
+                            </div>
+                            <div class="progress progresso-bar">
+                                <div class="progress-bar bg-@DiasHelper.ClasseStatusArtigo(a.Status)"
+                                     style="width:@a.Progresso%"></div>
+                            </div>
+                        </div>
+
+                        @if (a.UltimoPontoEstudado != null)
+                        {
+                            <p class="small text-muted mb-2">
+                                <i class="bi bi-bookmark me-1"></i>@a.UltimoPontoEstudado
+                            </p>
+                        }
+
+                        <div class="d-flex gap-2 flex-wrap mb-3">
+                            @if (a.Roadmap.Any())
+                            {
+                                <span class="badge bg-light text-secondary">
+                                    <i class="bi bi-map me-1"></i>@roadmapConcluido/@a.Roadmap.Count etapas
+                                </span>
+                            }
+                            @if (tarefasPendentes > 0)
+                            {
+                                <span class="badge bg-warning text-dark">
+                                    <i class="bi bi-hourglass me-1"></i>@tarefasPendentes tarefa(s)
+                                </span>
+                            }
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <a asp-page="Detalhes" asp-route-id="@a.Id" class="btn btn-sm btn-primary flex-grow-1">
+                                <i class="bi bi-folder2-open me-1"></i>Abrir
+                            </a>
+                            <a asp-page="Edit" asp-route-id="@a.Id" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <a asp-page="Delete" asp-route-id="@a.Id" class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-trash"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}

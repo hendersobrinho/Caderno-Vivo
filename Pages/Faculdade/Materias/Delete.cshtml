@@ -1,0 +1,39 @@
+@page "{id:int}"
+@model CadernoVivo.Pages.Faculdade.Materias.DeleteModel
+@{
+    ViewData["Title"] = "Remover Matéria";
+}
+
+@section Breadcrumb {
+    <li class="breadcrumb-item"><a asp-page="/Faculdade/Index">Faculdade</a></li>
+    <li class="breadcrumb-item active">Remover</li>
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="fw-bold mb-0 text-danger">Remover Matéria</h4>
+    <a asp-page="/Faculdade/Index" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Voltar
+    </a>
+</div>
+
+<div class="card border-danger" style="max-width:500px">
+    <div class="card-body">
+        <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            Esta ação removerá a matéria e <strong>todos os dados associados</strong> (aulas, materiais, tarefas, histórico e dúvidas).
+        </div>
+        <h5>@Model.Materia.Nome</h5>
+        @if (Model.Materia.Professor != null)
+        {
+            <p class="text-muted">Prof. @Model.Materia.Professor</p>
+        }
+        <form method="post">
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-danger">
+                    <i class="bi bi-trash me-1"></i>Confirmar remoção
+                </button>
+                <a asp-page="/Faculdade/Index" class="btn btn-outline-secondary">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>

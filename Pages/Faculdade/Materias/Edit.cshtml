@@ -1,0 +1,60 @@
+@page "{id:int}"
+@model CadernoVivo.Pages.Faculdade.Materias.EditModel
+@{
+    ViewData["Title"] = "Editar Matéria";
+}
+
+@section Breadcrumb {
+    <li class="breadcrumb-item"><a asp-page="/Faculdade/Index">Faculdade</a></li>
+    <li class="breadcrumb-item active">Editar Matéria</li>
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="fw-bold mb-0">Editar Matéria</h4>
+    <a asp-page="/Faculdade/Index" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Voltar
+    </a>
+</div>
+
+<div class="card" style="max-width:600px">
+    <div class="card-body">
+        <form method="post">
+            <input type="hidden" asp-for="Materia.Id" />
+            <input type="hidden" asp-for="Materia.DataCriacao" />
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+            <div class="mb-3">
+                <label asp-for="Materia.Nome" class="form-label"></label>
+                <input asp-for="Materia.Nome" class="form-control" />
+                <span asp-validation-for="Materia.Nome" class="text-danger small"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Materia.Professor" class="form-label"></label>
+                <input asp-for="Materia.Professor" class="form-control" />
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label asp-for="Materia.Semestre" class="form-label"></label>
+                    <input asp-for="Materia.Semestre" class="form-control" />
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label asp-for="Materia.CargaHoraria" class="form-label"></label>
+                    <input asp-for="Materia.CargaHoraria" class="form-control" type="number" />
+                </div>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Materia.Descricao" class="form-label"></label>
+                <textarea asp-for="Materia.Descricao" class="form-control" rows="3"></textarea>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-lg me-1"></i>Salvar
+                </button>
+                <a asp-page="/Faculdade/Index" class="btn btn-outline-secondary">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts { @await Html.PartialAsync("_ValidationScriptsPartial") }

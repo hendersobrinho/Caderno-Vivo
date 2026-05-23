@@ -1,0 +1,331 @@
+@page "{id:int}"
+@model CadernoVivo.Pages.Artigos.DetalhesModel
+@{
+    ViewData["Title"] = Model.Artigo.Titulo;
+    var a = Model.Artigo;
+}
+
+@section Breadcrumb {
+    <li class="breadcrumb-item"><a asp-page="Index">Artigos</a></li>
+    <li class="breadcrumb-item active">@a.Titulo</li>
+}
+
+<!-- Header -->
+<div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+        <h4 class="fw-bold mb-1">@a.Titulo</h4>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <span class="badge bg-@DiasHelper.ClasseStatusArtigo(a.Status)">@DiasHelper.LabelStatusArtigo(a.Status)</span>
+            @if (a.Tags != null)
+            {
+                @foreach (var tag in a.Tags.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                {
+                    <span class="badge bg-light text-secondary">@tag.Trim()</span>
+                }
+            }
+        </div>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-page="Edit" asp-route-id="@a.Id" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-pencil me-1"></i>Editar
+        </a>
+        <a asp-page="Index" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>Voltar
+        </a>
+    </div>
+</div>
+
+<!-- Progresso rápido -->
+<div class="card mb-3">
+    <div class="card-body py-2">
+        <form method="post" asp-page-handler="AtualizarProgresso" asp-route-id="@a.Id">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-5">
+                    <label class="form-label small mb-1">Último ponto estudado</label>
+                    <input asp-for="UltimoPonto" class="form-control form-control-sm"
+                           placeholder="Ex: Seção 3.2 – Algoritmos de ordenação" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small mb-1">Progresso: <strong>@a.Progresso%</strong></label>
+                    <input asp-for="Progresso" class="form-control form-control-sm" type="range" min="0" max="100"
+                           oninput="this.previousElementSibling.querySelector('strong').textContent=this.value+'%'" />
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-sm btn-success w-100">Atualizar</button>
+                </div>
+                <div class="col-md-2">
+                    <div class="progress" style="height:8px">
+                        <div class="progress-bar bg-@DiasHelper.ClasseStatusArtigo(a.Status)"
+                             style="width:@a.Progresso%"></div>
+                    </div>
+                    <small class="text-muted">@a.Progresso%</small>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Tabs -->
+<ul class="nav nav-tabs mb-3" id="artigoTabs">
+    <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#roadmap-tab">
+        <i class="bi bi-map me-1"></i>Roadmap (@a.Roadmap.Count)
+    </button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#aulas-tab">
+        <i class="bi bi-play-circle me-1"></i>Aulas (@a.Aulas.Count)
+    </button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tarefas-tab">
+        <i class="bi bi-check2-square me-1"></i>Tarefas (@a.Tarefas.Count)
+    </button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#insights-tab">
+        <i class="bi bi-lightbulb me-1"></i>Insights (@a.Insights.Count)
+    </button></li>
+    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#duvidas-tab">
+        <i class="bi bi-question-circle me-1"></i>Dúvidas (@a.Duvidas.Count)
+    </button></li>
+</ul>
+
+<div class="tab-content">
+
+    <!-- Roadmap -->
+    <div class="tab-pane fade show active" id="roadmap-tab">
+        <div class="card">
+            <div class="card-body">
+                @if (a.Roadmap.Any())
+                {
+                    <div class="mb-3">
+                        @foreach (var item in a.Roadmap)
+                        {
+                            <div class="d-flex align-items-center gap-2 mb-2 p-2 rounded @(item.Concluido ? "bg-success bg-opacity-10" : "bg-light")">
+                                <form method="post" asp-page-handler="ConcluirRoadmap" asp-route-id="@a.Id" asp-route-itemId="@item.Id">
+                                    <button class="btn btn-sm @(item.Concluido ? "btn-success" : "btn-outline-secondary")" title="@(item.Concluido ? "Desmarcar" : "Concluir")">
+                                        <i class="bi bi-check-lg"></i>
+                                    </button>
+                                </form>
+                                <div class="flex-grow-1">
+                                    <span class="@(item.Concluido ? "text-decoration-line-through text-muted" : "fw-semibold")">
+                                        @item.Ordem. @item.Titulo
+                                    </span>
+                                    @if (item.Descricao != null) { <div class="small text-muted">@item.Descricao</div> }
+                                </div>
+                                <form method="post" asp-page-handler="RemoverRoadmap" asp-route-id="@a.Id" asp-route-itemId="@item.Id">
+                                    <button class="btn btn-sm btn-outline-danger py-0 px-1" onclick="return confirm('Remover?')">
+                                        <i class="bi bi-trash" style="font-size:.75rem"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        }
+                        <div class="text-muted small mt-2">
+                            @a.Roadmap.Count(r => r.Concluido)/@a.Roadmap.Count etapas concluídas
+                        </div>
+                    </div>
+                }
+                <hr />
+                <h6 class="section-title">Adicionar etapa</h6>
+                <form method="post" asp-page-handler="AddRoadmap" asp-route-id="@a.Id">
+                    <div class="d-flex gap-2">
+                        <input asp-for="NovoRoadmap.Titulo" class="form-control form-control-sm"
+                               placeholder="Ex: Estudar conceitos fundamentais" />
+                        <button type="submit" class="btn btn-sm btn-primary text-nowrap">Adicionar</button>
+                    </div>
+                    <div class="mt-2">
+                        <input asp-for="NovoRoadmap.Descricao" class="form-control form-control-sm"
+                               placeholder="Descrição (opcional)" />
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Aulas -->
+    <div class="tab-pane fade" id="aulas-tab">
+        <div class="card">
+            <div class="card-body">
+                @if (a.Aulas.Any())
+                {
+                    <div class="mb-3">
+                        @foreach (var aula in a.Aulas)
+                        {
+                            <div class="card mb-2 @(aula.Concluida ? "border-success border-opacity-25" : "")">
+                                <div class="card-body py-2 px-3">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <span class="badge bg-secondary">@aula.Ordem</span>
+                                                <strong class="small @(aula.Concluida ? "text-decoration-line-through text-muted" : "")">
+                                                    @aula.Titulo
+                                                </strong>
+                                                @if (aula.Concluida)
+                                                {
+                                                    <span class="badge bg-success">Concluída</span>
+                                                }
+                                            </div>
+                                            @if (aula.Conteudo != null)
+                                            {
+                                                <p class="small text-muted mb-0 mt-1">@aula.Conteudo</p>
+                                            }
+                                        </div>
+                                        <form method="post" asp-page-handler="ConcluirAula" asp-route-id="@a.Id" asp-route-aulaId="@aula.Id">
+                                            <button class="btn btn-sm @(aula.Concluida ? "btn-outline-success" : "btn-outline-secondary")" title="@(aula.Concluida ? "Desmarcar" : "Marcar concluída")">
+                                                <i class="bi bi-@(aula.Concluida ? "arrow-counterclockwise" : "check-lg")"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                <hr />
+                <h6 class="section-title">Adicionar aula</h6>
+                <form method="post" asp-page-handler="AddAula" asp-route-id="@a.Id">
+                    <div class="mb-2">
+                        <input asp-for="NovaAula.Titulo" class="form-control form-control-sm"
+                               placeholder="Título da aula" />
+                    </div>
+                    <div class="mb-2">
+                        <textarea asp-for="NovaAula.Conteudo" class="form-control form-control-sm" rows="2"
+                                  placeholder="Notas/conteúdo (opcional)"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-primary">Adicionar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tarefas -->
+    <div class="tab-pane fade" id="tarefas-tab">
+        <div class="card">
+            <div class="card-body">
+                @if (a.Tarefas.Any())
+                {
+                    <div class="table-responsive mb-3">
+                        <table class="table table-sm align-middle">
+                            <thead><tr><th>Título</th><th>Prazo</th><th>Status</th><th></th></tr></thead>
+                            <tbody>
+                                @foreach (var t in a.Tarefas)
+                                {
+                                    var atrasada = t.Status != StatusTarefa.Concluida && t.DataHoraLimite < DateTime.Now;
+                                    <tr>
+                                        <td>@t.Titulo</td>
+                                        <td class="@(atrasada ? "text-danger fw-bold" : "small")">@t.DataHoraLimite.ToString("dd/MM/yy HH:mm")</td>
+                                        <td><span class="badge bg-@DiasHelper.ClasseStatus(t.Status)">@DiasHelper.LabelStatus(t.Status)</span></td>
+                                        <td>
+                                            <a asp-page="/Artigos/Tarefas/Edit" asp-route-id="@t.Id"
+                                               class="btn btn-sm btn-outline-secondary">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                <hr />
+                <h6 class="section-title">Adicionar tarefa</h6>
+                <form method="post" asp-page-handler="AddTarefa" asp-route-id="@a.Id">
+                    <div class="row g-2">
+                        <div class="col-md-5">
+                            <input asp-for="NovaTarefa.Titulo" class="form-control form-control-sm" placeholder="Título da tarefa" />
+                        </div>
+                        <div class="col-md-4">
+                            <input asp-for="NovaTarefa.DataHoraLimite" class="form-control form-control-sm" type="datetime-local" />
+                        </div>
+                        <div class="col-md-3">
+                            <button type="submit" class="btn btn-sm btn-primary w-100">Adicionar</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Insights -->
+    <div class="tab-pane fade" id="insights-tab">
+        <div class="card">
+            <div class="card-body">
+                @if (a.Insights.Any())
+                {
+                    <div class="mb-3">
+                        @foreach (var ins in a.Insights)
+                        {
+                            <div class="d-flex gap-2 mb-2 p-2 bg-warning bg-opacity-10 rounded">
+                                <i class="bi bi-lightbulb-fill text-warning mt-1"></i>
+                                <div class="flex-grow-1">
+                                    <p class="mb-0 small">@ins.Conteudo</p>
+                                    <small class="text-muted">@ins.DataRegistro.ToString("dd/MM/yyyy HH:mm")</small>
+                                </div>
+                                <form method="post" asp-page-handler="RemoverInsight" asp-route-id="@a.Id" asp-route-insightId="@ins.Id">
+                                    <button class="btn btn-sm btn-outline-danger py-0 px-1" onclick="return confirm('Remover?')">
+                                        <i class="bi bi-trash" style="font-size:.7rem"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        }
+                    </div>
+                }
+                <hr />
+                <h6 class="section-title">Registrar insight</h6>
+                <form method="post" asp-page-handler="AddInsight" asp-route-id="@a.Id">
+                    <div class="d-flex gap-2">
+                        <textarea asp-for="NovoInsight.Conteudo" class="form-control form-control-sm" rows="2"
+                                  placeholder="Anotação, descoberta ou ideia importante..."></textarea>
+                        <button type="submit" class="btn btn-sm btn-warning align-self-end text-nowrap">Registrar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dúvidas -->
+    <div class="tab-pane fade" id="duvidas-tab">
+        <div class="card">
+            <div class="card-body">
+                @{
+                    var duv_abertas = a.Duvidas.Where(d => !d.Resolvida).ToList();
+                    var duv_resolvidas = a.Duvidas.Where(d => d.Resolvida).ToList();
+                }
+                @if (duv_abertas.Any())
+                {
+                    <h6 class="section-title">Em aberto</h6>
+                    @foreach (var d in duv_abertas)
+                    {
+                        <div class="card border-warning mb-2">
+                            <div class="card-body py-2 px-3">
+                                <p class="mb-1 small fw-semibold">@d.Descricao</p>
+                                <small class="text-muted">@d.DataRegistro.ToString("dd/MM/yyyy")</small>
+                                <form method="post" asp-page-handler="ResolverDuvida" asp-route-id="@a.Id" asp-route-duvidaId="@d.Id" class="mt-2 d-flex gap-2">
+                                    <input name="resolucao" class="form-control form-control-sm" placeholder="Resolução..." />
+                                    <button class="btn btn-sm btn-success text-nowrap">Resolver</button>
+                                </form>
+                            </div>
+                        </div>
+                    }
+                }
+                @if (duv_resolvidas.Any())
+                {
+                    <h6 class="section-title mt-3">Resolvidas</h6>
+                    @foreach (var d in duv_resolvidas)
+                    {
+                        <div class="card border-success border-opacity-25 mb-2">
+                            <div class="card-body py-2 px-3">
+                                <p class="mb-0 small text-decoration-line-through text-muted">@d.Descricao</p>
+                                @if (d.Resolucao != null) { <p class="mb-0 small text-success"><i class="bi bi-check me-1"></i>@d.Resolucao</p> }
+                            </div>
+                        </div>
+                    }
+                }
+                <hr />
+                <h6 class="section-title">Registrar dúvida</h6>
+                <form method="post" asp-page-handler="AddDuvida" asp-route-id="@a.Id">
+                    <div class="d-flex gap-2">
+                        <textarea asp-for="NovaDuvida.Descricao" class="form-control form-control-sm" rows="2"
+                                  placeholder="Descreva a dúvida..."></textarea>
+                        <button type="submit" class="btn btn-sm btn-primary align-self-end">Registrar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+</div>

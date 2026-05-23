@@ -1,0 +1,65 @@
+@page "{id:int}"
+@model CadernoVivo.Pages.Artigos.EditModel
+@{
+    ViewData["Title"] = "Editar Artigo";
+}
+
+@section Breadcrumb {
+    <li class="breadcrumb-item"><a asp-page="Index">Artigos</a></li>
+    <li class="breadcrumb-item active">Editar</li>
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="fw-bold mb-0">Editar Artigo</h4>
+    <a asp-page="Detalhes" asp-route-id="@Model.Artigo.Id" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>Voltar
+    </a>
+</div>
+
+<div class="card" style="max-width:620px">
+    <div class="card-body">
+        <form method="post">
+            <input type="hidden" asp-for="Artigo.Id" />
+            <input type="hidden" asp-for="Artigo.DataCriacao" />
+
+            <div class="mb-3">
+                <label asp-for="Artigo.Titulo" class="form-label"></label>
+                <input asp-for="Artigo.Titulo" class="form-control" />
+                <span asp-validation-for="Artigo.Titulo" class="text-danger small"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Artigo.Descricao" class="form-label"></label>
+                <textarea asp-for="Artigo.Descricao" class="form-control" rows="3"></textarea>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Artigo.Tags" class="form-label"></label>
+                <input asp-for="Artigo.Tags" class="form-control" />
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label asp-for="Artigo.Status" class="form-label"></label>
+                    <select asp-for="Artigo.Status" class="form-select"
+                            asp-items="Html.GetEnumSelectList<StatusArtigo>()"></select>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label asp-for="Artigo.Progresso" class="form-label"></label>
+                    <input asp-for="Artigo.Progresso" class="form-control" type="number" min="0" max="100" />
+                </div>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Artigo.UltimoPontoEstudado" class="form-label"></label>
+                <input asp-for="Artigo.UltimoPontoEstudado" class="form-control"
+                       placeholder="Ex: Seção 3.2 – Árvores AVL" />
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-lg me-1"></i>Salvar
+                </button>
+                <a asp-page="Detalhes" asp-route-id="@Model.Artigo.Id" class="btn btn-outline-secondary">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts { @await Html.PartialAsync("_ValidationScriptsPartial") }

@@ -1,0 +1,67 @@
+@page
+@model CadernoVivo.Pages.Faculdade.Importar.IndexModel
+@{
+    ViewData["Title"] = "Importar JSON – Faculdade";
+}
+
+@section Breadcrumb {
+    <li class="breadcrumb-item"><a asp-page="/Faculdade/Index">Faculdade</a></li>
+    <li class="breadcrumb-item active">Importar JSON</li>
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="fw-bold mb-0"><i class="bi bi-cloud-upload text-primary me-2"></i>Importar JSON – Faculdade</h4>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">Enviar arquivo</div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label class="form-label">Arquivo JSON</label>
+                        <input type="file" name="arquivo" class="form-control" accept=".json" required />
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-upload me-1"></i>Importar
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">Formato esperado (tipo: materia)</div>
+            <div class="card-body">
+                <pre class="small bg-light p-3 rounded" style="font-size:.75rem">{
+  "tipo": "materia",
+  "nome": "Algoritmos e ED",
+  "professor": "Prof. Silva",
+  "semestre": "1/2025",
+  "aulas": [
+    { "diaSemana": 1, "horaInicio": "08:00",
+      "horaFim": "10:00", "sala": "Lab 3" }
+  ],
+  "materiais": [
+    { "nome": "Livro CLRS", "tipo": "Livro",
+      "url": "" }
+  ],
+  "tarefas": [
+    { "titulo": "Lista 1",
+      "descricao": "Cap. 1-3",
+      "dataHoraLimite": "2025-06-15T23:59:00" }
+  ],
+  "duvidas": [
+    { "descricao": "O que é memoização?" }
+  ]
+}</pre>
+                <p class="small text-muted mt-2">
+                    <strong>diaSemana:</strong> 0=Dom, 1=Seg, 2=Ter, 3=Qua, 4=Qui, 5=Sex, 6=Sáb<br/>
+                    <strong>tipo (material):</strong> Livro, PDF, Video, Link, Outro
+                </p>
+            </div>
+        </div>
+    </div>
+</div>

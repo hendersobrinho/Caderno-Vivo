@@ -1,0 +1,117 @@
+@page
+@model CadernoVivo.Pages.Faculdade.Pendencias.IndexModel
+@{
+    ViewData["Title"] = "Pendências";
+}
+
+@section Breadcrumb {
+    <li class="breadcrumb-item"><a asp-page="/Faculdade/Index">Faculdade</a></li>
+    <li class="breadcrumb-item active">Pendências</li>
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="fw-bold mb-0"><i class="bi bi-exclamation-triangle text-danger me-2"></i>Pendências</h4>
+    <div class="d-flex gap-2">
+        @if (!Model.MostrarResolvidas)
+        {
+            <a asp-page="Index" asp-route-resolvidas="true" class="btn btn-sm btn-outline-secondary">Ver resolvidas</a>
+        }
+        else
+        {
+            <a asp-page="Index" class="btn btn-sm btn-outline-secondary">Ver abertas</a>
+        }
+    </div>
+</div>
+
+<!-- Adicionar manual -->
+<div class="card mb-3">
+    <div class="card-header small fw-semibold">Adicionar pendência manualmente</div>
+    <div class="card-body">
+        <form method="post" asp-page-handler="Add">
+            <div class="row g-2">
+                <div class="col-md-5">
+                    <input asp-for="NovaPendencia.Descricao" class="form-control form-control-sm" placeholder="Descrição da pendência *" required />
+                </div>
+                <div class="col-md-2">
+                    <select asp-for="NovaPendencia.Origem" class="form-select form-select-sm">
+                        <option value="Faculdade">Faculdade</option>
+                        <option value="Artigo">Artigo</option>
+                        <option value="Geral">Geral</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <input asp-for="NovaPendencia.DataLimite" class="form-control form-control-sm" type="datetime-local" placeholder="Data limite" />
+                </div>
+                <div class="col-md-2 d-flex align-items-center">
+                    <button type="submit" class="btn btn-sm btn-danger w-100">Adicionar</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        @if (!Model.Pendencias.Any())
+        {
+            <div class="text-center text-muted py-5">
+                <i class="bi bi-check-all fs-2 d-block mb-2"></i>
+                @(Model.MostrarResolvidas ? "Nenhuma pendência resolvida." : "Sem pendências em aberto!")
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Descrição</th>
+                            <th>Origem</th>
+                            <th>Criada em</th>
+                            <th>Limite</th>
+                            <th>Status</th>
+                            @if (!Model.MostrarResolvidas) { <th></th> }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in Model.Pendencias)
+                        {
+                            <tr>
+                                <td>
+                                    <span class="@(p.Resolvida ? "text-decoration-line-through text-muted" : "fw-semibold")">
+                                        @p.Descricao
+                                    </span>
+                                    @if (p.Observacao != null) { <div class="small text-muted">@p.Observacao</div> }
+                                </td>
+                                <td><span class="badge bg-secondary">@p.Origem</span></td>
+                                <td class="small text-muted">@p.DataCriacao.ToString("dd/MM/yyyy")</td>
+                                <td class="small @(p.DataLimite < DateTime.Now && !p.Resolvida ? "text-danger fw-bold" : "text-muted")">
+                                    @(p.DataLimite?.ToString("dd/MM/yyyy") ?? "—")
+                                </td>
+                                <td>
+                                    @if (p.Resolvida)
+                                    {
+                                        <span class="badge bg-success">Resolvida</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger">Aberta</span>
+                                    }
+                                </td>
+                                @if (!Model.MostrarResolvidas)
+                                {
+                                    <td>
+                                        <form method="post" asp-page-handler="Resolver" asp-route-id="@p.Id" class="d-flex gap-1">
+                                            <input name="obs" class="form-control form-control-sm" placeholder="Obs..." style="width:120px" />
+                                            <button class="btn btn-sm btn-outline-success text-nowrap">Resolver</button>
+                                        </form>
+                                    </td>
+                                }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
