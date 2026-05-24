@@ -52,9 +52,15 @@ public class IndexModel : PageModel
         if (Enum.TryParse<StatusBloco>(status, out var statusEnum))
             bloco.Status = statusEnum;
 
+        bloco.SegundosGastos = DeveRegistrarTempoGasto(bloco.Status)
+            ? CalcularSegundosGastos(bloco, DateTime.Now)
+            : null;
         bloco.DataConclusao = bloco.Status is StatusBloco.Concluido or StatusBloco.Parcial or StatusBloco.HoraExtra
             ? DateTime.Now
             : null;
+        bloco.IniciadoEm = null;
+        bloco.PausadoEm = null;
+        bloco.SegundosPausados = 0;
 
         bloco.OndeParei = ondeParei;
         bloco.ProximoPasso = proximoPasso;
@@ -115,12 +121,18 @@ public class IndexModel : PageModel
         var bloco = await _db.BloquesEstudo.FindAsync(id);
         if (bloco != null)
         {
-            var blocosEmAndamento = await _db.BloquesEstudo
-                .Where(b => b.Status == StatusBloco.EmAndamento && b.Id != id)
+            var blocosAtivos = await _db.BloquesEstudo
+                .Where(b => (b.Status == StatusBloco.EmAndamento || b.Status == StatusBloco.Pausado) && b.Id != id)
                 .ToListAsync();
 
-            foreach (var emAndamento in blocosEmAndamento)
-                emAndamento.Status = StatusBloco.Agendado;
+            foreach (var ativo in blocosAtivos)
+            {
+                ativo.Status = StatusBloco.Agendado;
+                ativo.IniciadoEm = null;
+                ativo.SegundosPausados = 0;
+                ativo.SegundosGastos = null;
+                ativo.PausadoEm = null;
+            }
 
             var duracao = CalcularDuracao(bloco.HoraInicio, bloco.HoraFim);
             var inicioReal = DateTime.Now;
@@ -130,8 +142,94 @@ public class IndexModel : PageModel
             bloco.HoraInicio = inicioReal.ToString("HH:mm");
             bloco.HoraFim = fimReal.ToString("HH:mm");
             bloco.Status = StatusBloco.EmAndamento;
+            bloco.IniciadoEm = inicioReal;
+            bloco.SegundosPausados = 0;
+            bloco.SegundosGastos = null;
+            bloco.MinutosExtras = 0;
+            bloco.PausadoEm = null;
             await _db.SaveChangesAsync();
         }
+        return RedirectToPage();
+    }
+
+    public async Task<IActionResult> OnPostPausarAsync(int id)
+    {
+        var bloco = await _db.BloquesEstudo.FindAsync(id);
+        if (bloco == null) return NotFound();
+
+        if (bloco.Status != StatusBloco.EmAndamento)
+        {
+            TempData["Erro"] = "So da para pausar um bloco que esteja em andamento.";
+            return RedirectToPage();
+        }
+
+        bloco.Status = StatusBloco.Pausado;
+        bloco.PausadoEm = DateTime.Now;
+        await _db.SaveChangesAsync();
+
+        TempData["Sucesso"] = $"\"{bloco.Titulo}\" pausado.";
+        return RedirectToPage();
+    }
+
+    public async Task<IActionResult> OnPostRetomarAsync(int id)
+    {
+        var bloco = await _db.BloquesEstudo.FindAsync(id);
+        if (bloco == null) return NotFound();
+
+        if (bloco.Status != StatusBloco.Pausado || !bloco.PausadoEm.HasValue)
+        {
+            TempData["Erro"] = "Este bloco nao esta pausado.";
+            return RedirectToPage();
+        }
+
+        var fimAtual = ResolverFimBloco(bloco);
+        if (!fimAtual.HasValue)
+        {
+            TempData["Erro"] = "Nao consegui retomar porque o horario final do bloco esta invalido.";
+            return RedirectToPage();
+        }
+
+        var novoFim = fimAtual.Value.Add(DateTime.Now - bloco.PausadoEm.Value);
+        bloco.SegundosPausados += Math.Max(0, (int)Math.Round((DateTime.Now - bloco.PausadoEm.Value).TotalSeconds));
+        bloco.HoraFim = novoFim.ToString("HH:mm");
+        bloco.Status = StatusBloco.EmAndamento;
+        bloco.PausadoEm = null;
+        await _db.SaveChangesAsync();
+
+        TempData["Sucesso"] = $"\"{bloco.Titulo}\" retomado.";
+        return RedirectToPage();
+    }
+
+    public async Task<IActionResult> OnPostAdicionarTempoAsync(int id, int minutos)
+    {
+        var bloco = await _db.BloquesEstudo.FindAsync(id);
+        if (bloco == null) return NotFound();
+
+        if (minutos <= 0)
+        {
+            TempData["Erro"] = "Informe uma quantidade valida de minutos extras.";
+            return RedirectToPage();
+        }
+
+        if (bloco.Status != StatusBloco.EmAndamento && bloco.Status != StatusBloco.Pausado)
+        {
+            TempData["Erro"] = "So da para adicionar tempo extra em um bloco iniciado.";
+            return RedirectToPage();
+        }
+
+        var fimAtual = ResolverFimBloco(bloco);
+        if (!fimAtual.HasValue)
+        {
+            TempData["Erro"] = "Nao consegui somar tempo porque o horario final do bloco esta invalido.";
+            return RedirectToPage();
+        }
+
+        var novoFim = fimAtual.Value.AddMinutes(minutos);
+        bloco.HoraFim = novoFim.ToString("HH:mm");
+        bloco.MinutosExtras += minutos;
+        await _db.SaveChangesAsync();
+
+        TempData["Sucesso"] = $"Adicionados {minutos} min de hora extra em \"{bloco.Titulo}\".";
         return RedirectToPage();
     }
 
@@ -172,6 +270,10 @@ public class IndexModel : PageModel
         bloco.Titulo = titulo.Trim();
         bloco.Descricao = descricao?.Trim();
         bloco.Duvidas = string.IsNullOrWhiteSpace(observacoes) ? null : observacoes.Trim();
+        bloco.IniciadoEm = null;
+        bloco.SegundosPausados = 0;
+        bloco.SegundosGastos = null;
+        bloco.PausadoEm = null;
 
         await _db.SaveChangesAsync();
 
@@ -252,6 +354,9 @@ public class IndexModel : PageModel
             b.Status == StatusBloco.EmAndamento);
 
         BlocoAtual ??= BloquesHoje.FirstOrDefault(b =>
+            b.Status == StatusBloco.Pausado);
+
+        BlocoAtual ??= BloquesHoje.FirstOrDefault(b =>
             string.Compare(b.HoraInicio, agoraStr) <= 0 &&
             string.Compare(b.HoraFim, agoraStr) > 0 &&
             b.Status == StatusBloco.Agendado);
@@ -268,9 +373,48 @@ public class IndexModel : PageModel
             !TimeSpan.TryParse(horaFim, out var fim))
             return TimeSpan.FromMinutes(50);
 
+        if (fim <= inicio)
+            fim = fim.Add(TimeSpan.FromDays(1));
+
         var duracao = fim - inicio;
         return duracao.TotalMinutes > 0
             ? duracao
             : TimeSpan.FromMinutes(50);
+    }
+
+    private static DateTime? ResolverFimBloco(BlocoEstudo bloco)
+    {
+        if (!TimeSpan.TryParse(bloco.HoraInicio, out var inicio) ||
+            !TimeSpan.TryParse(bloco.HoraFim, out var fim))
+            return null;
+
+        var baseDate = bloco.IniciadoEm?.Date ?? bloco.Data.Date;
+        var fimDataHora = baseDate.Add(fim);
+        if (fim <= inicio)
+            fimDataHora = fimDataHora.AddDays(1);
+
+        return fimDataHora;
+    }
+
+    private static bool DeveRegistrarTempoGasto(StatusBloco status)
+    {
+        return status != StatusBloco.Agendado;
+    }
+
+    private static int CalcularSegundosGastos(BlocoEstudo bloco, DateTime referencia)
+    {
+        if (bloco.IniciadoEm.HasValue)
+        {
+            var fimMedicao = bloco.Status == StatusBloco.Pausado && bloco.PausadoEm.HasValue
+                ? bloco.PausadoEm.Value
+                : referencia;
+
+            var total = fimMedicao - bloco.IniciadoEm.Value - TimeSpan.FromSeconds(bloco.SegundosPausados);
+            return Math.Max(0, (int)Math.Round(total.TotalSeconds));
+        }
+
+        return CalcularDuracao(bloco.HoraInicio, bloco.HoraFim) is var duracao
+            ? Math.Max(0, (int)Math.Round(duracao.TotalSeconds))
+            : 0;
     }
 }

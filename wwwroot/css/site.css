@@ -857,7 +857,7 @@ html[data-theme="dark"] .bloco-atual {
     color: var(--ink-900);
     margin-bottom: 8px;
 }
-.bloco-atual #timer-display {
+.bloco-atual [data-live-timer] {
     font-family: var(--font-mono);
     font-size: 20px;
     font-weight: 600;
@@ -999,7 +999,7 @@ html[data-theme="dark"] .bloco-atual {
 
 .metric-grid {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 12px;
 }
 
@@ -1195,6 +1195,11 @@ html[data-theme="dark"] .bloco-atual {
 .action-row.overdue {
     border-left: 4px solid var(--bad-500);
     background: linear-gradient(90deg, var(--bad-50), transparent 45%);
+}
+
+.action-row a.text-reset:hover {
+    opacity: 0.75;
+    cursor: pointer;
 }
 
 .timeline-mini-item {
@@ -1914,6 +1919,11 @@ html[data-theme="dark"] .bloco-atual {
     box-shadow: var(--shadow-sm);
 }
 
+html[data-theme="dark"] .run-card,
+html[data-theme="dark"] .reschedule-card {
+    background: var(--bg-surface);
+}
+
 .timer-pill {
     font-family: var(--font-mono);
     font-size: 18px;
@@ -1956,6 +1966,12 @@ html[data-theme="dark"] .bloco-atual {
 
     .timeline-actions-grid {
         grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 1300px) {
+    .metric-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 }
 
@@ -2134,7 +2150,7 @@ html[data-theme="dark"] .reminder-row.featured {
     background: linear-gradient(90deg, rgba(99,153,255,0.07), transparent 44%);
 }
 
-.focus-timer #timer-display {
+.focus-timer [data-live-timer] {
     font-family: var(--font-mono);
     font-size: 34px;
     font-weight: 750;
@@ -2146,6 +2162,153 @@ html[data-theme="dark"] .reminder-row.featured {
     font-family: var(--font-mono);
     font-size: 13px;
     color: var(--ink-500);
+}
+
+.floating-timer {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    z-index: 1035;
+    width: min(360px, calc(100vw - 32px));
+    padding: 16px;
+    border-radius: 20px;
+    border: 1px solid rgba(37,99,235,0.18);
+    background:
+        radial-gradient(circle at top left, rgba(16,185,129,0.18), transparent 34%),
+        linear-gradient(145deg, rgba(255,255,255,0.97), rgba(248,250,252,0.94));
+    box-shadow: 0 18px 50px rgba(15,23,42,0.18);
+    backdrop-filter: blur(14px);
+    animation: floating-timer-in 0.2s ease-out;
+}
+
+html[data-theme="dark"] .floating-timer {
+    border-color: rgba(99,153,255,0.24);
+    background:
+        radial-gradient(circle at top left, rgba(16,185,129,0.16), transparent 34%),
+        linear-gradient(145deg, rgba(15,23,42,0.96), rgba(17,24,39,0.94));
+    box-shadow: 0 18px 54px rgba(2,6,23,0.42);
+}
+
+.floating-timer.is-paused {
+    background:
+        radial-gradient(circle at top left, rgba(245,158,11,0.18), transparent 34%),
+        linear-gradient(145deg, rgba(255,255,255,0.97), rgba(248,250,252,0.94));
+}
+
+html[data-theme="dark"] .floating-timer.is-paused {
+    background:
+        radial-gradient(circle at top left, rgba(245,158,11,0.18), transparent 34%),
+        linear-gradient(145deg, rgba(15,23,42,0.96), rgba(17,24,39,0.94));
+}
+
+.floating-timer.is-finished {
+    background:
+        radial-gradient(circle at top left, rgba(239,68,68,0.18), transparent 34%),
+        linear-gradient(145deg, rgba(255,255,255,0.97), rgba(248,250,252,0.94));
+}
+
+html[data-theme="dark"] .floating-timer.is-finished {
+    background:
+        radial-gradient(circle at top left, rgba(239,68,68,0.18), transparent 34%),
+        linear-gradient(145deg, rgba(15,23,42,0.96), rgba(17,24,39,0.94));
+}
+
+.floating-timer-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.floating-timer-kicker {
+    display: block;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: 10px;
+    font-weight: 800;
+    color: var(--ink-500);
+}
+
+.floating-timer-head strong {
+    display: block;
+    font-size: 17px;
+    line-height: 1.2;
+    color: var(--ink-900);
+}
+
+.floating-timer-pulse {
+    width: 12px;
+    height: 12px;
+    margin-top: 4px;
+    border-radius: 999px;
+    background: var(--good-500);
+    box-shadow: 0 0 0 0 rgba(34,197,94,0.38);
+    animation: floating-timer-pulse 1.4s infinite;
+    flex-shrink: 0;
+}
+
+.floating-timer.is-paused .floating-timer-pulse {
+    background: var(--warn-500);
+    box-shadow: none;
+    animation: none;
+}
+
+.floating-timer.is-finished .floating-timer-pulse {
+    background: var(--bad-500);
+    box-shadow: none;
+    animation: none;
+}
+
+.floating-timer-display {
+    font-family: var(--font-mono);
+    font-size: clamp(32px, 4vw, 44px);
+    line-height: 1;
+    font-weight: 850;
+    color: var(--ink-900);
+    margin: 14px 0 8px;
+    letter-spacing: -0.04em;
+}
+
+.floating-timer-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--ink-600);
+}
+
+.floating-timer-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+}
+
+.floating-timer-actions form {
+    margin: 0;
+}
+
+.floating-timer-spacer {
+    height: 152px;
+}
+
+@keyframes floating-timer-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(34,197,94,0.38); }
+    70% { box-shadow: 0 0 0 12px rgba(34,197,94,0); }
+    100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); }
+}
+
+@keyframes floating-timer-in {
+    from {
+        opacity: 0;
+        transform: translateY(12px) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }
 
 .lesson-queue {
@@ -2343,6 +2506,33 @@ html[data-theme="dark"] .reminder-row.featured {
 
     .queue-body {
         grid-column: 2;
+    }
+
+    .floating-timer {
+        right: 12px;
+        left: 12px;
+        bottom: 12px;
+        width: auto;
+        border-radius: 18px;
+        padding: 14px;
+    }
+
+    .floating-timer-head {
+        flex-direction: column;
+    }
+
+    .floating-timer-actions > .btn,
+    .floating-timer-actions > form {
+        flex: 1 1 0;
+    }
+
+    .floating-timer-actions .btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .floating-timer-spacer {
+        height: 188px;
     }
 }
 

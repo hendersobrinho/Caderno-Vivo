@@ -35,7 +35,8 @@ public enum StatusBloco
     Parcial     = 3,
     NaoFeito    = 4,
     Reagendado  = 5,
-    HoraExtra   = 6
+    HoraExtra   = 6,
+    Pausado     = 7
 }
 
 public enum PrioridadeProjeto

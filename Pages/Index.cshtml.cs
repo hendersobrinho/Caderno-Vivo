@@ -44,6 +44,7 @@ public class IndexModel : PageModel
     public int ConcluidosDepoisPrazo { get; set; }
     public int HorasExtrasFeitas { get; set; }
     public int MinutosExtrasFeitos { get; set; }
+    public int MediaMinutosPorBloco { get; set; }
     public int ProgressoSemana { get; set; }
     public int ProgressoHoje { get; set; }
     public DateTime InicioSemana { get; set; }
@@ -158,15 +159,18 @@ public class IndexModel : PageModel
         MinutosSemanaPlanejados = BlocosSemana.Sum(CalcularMinutos);
         MinutosSemanaConcluidos = BlocosSemana
             .Where(b => b.Status == StatusBloco.Concluido)
-            .Sum(CalcularMinutos);
+            .Sum(CalcularMinutosGastos);
 
         ConcluidosNoPrazo = BlocosSemana.Count(ConcluidoNoPrazo);
         ConcluidosAntecipados = BlocosSemana.Count(ConcluidoAntecipado);
         ConcluidosDepoisPrazo = BlocosSemana.Count(ConcluidoDepoisDoPrazo);
-        HorasExtrasFeitas = BlocosSemana.Count(b => b.Status == StatusBloco.HoraExtra);
-        MinutosExtrasFeitos = BlocosSemana
-            .Where(b => b.Status == StatusBloco.HoraExtra)
-            .Sum(CalcularMinutos);
+        HorasExtrasFeitas = BlocosSemana.Count(TemHoraExtra);
+        MinutosExtrasFeitos = BlocosSemana.Sum(CalcularMinutosExtras);
+
+        var concluidosSemana = BlocosSemana.Where(b => b.Status == StatusBloco.Concluido).ToList();
+        MediaMinutosPorBloco = concluidosSemana.Count == 0
+            ? 0
+            : (int)Math.Round(concluidosSemana.Average(b => (double)CalcularMinutosGastos(b)));
 
         ProgressoSemana = BlocosSemanaTotal == 0
             ? 0
@@ -227,6 +231,10 @@ public class IndexModel : PageModel
             ? ProximoSabado(hoje)
             : hoje.AddDays(1);
         bloco.Status = StatusBloco.Agendado;
+        bloco.IniciadoEm = null;
+        bloco.SegundosPausados = 0;
+        bloco.SegundosGastos = null;
+        bloco.PausadoEm = null;
 
         await _db.SaveChangesAsync();
 
@@ -240,6 +248,10 @@ public class IndexModel : PageModel
         if (bloco == null) return NotFound();
 
         bloco.Status = StatusBloco.NaoFeito;
+        bloco.IniciadoEm = null;
+        bloco.SegundosPausados = 0;
+        bloco.SegundosGastos = null;
+        bloco.PausadoEm = null;
         await _db.SaveChangesAsync();
 
         TempData["Sucesso"] = $"\"{bloco.Titulo}\" marcado como não feito.";
@@ -258,8 +270,19 @@ public class IndexModel : PageModel
             !TimeSpan.TryParse(bloco.HoraFim, out var fim))
             return 0;
 
+        if (fim <= inicio)
+            fim = fim.Add(TimeSpan.FromDays(1));
+
         var duracao = fim - inicio;
         return duracao.TotalMinutes > 0 ? (int)Math.Round(duracao.TotalMinutes) : 0;
+    }
+
+    private static int CalcularMinutosGastos(BlocoEstudo bloco)
+    {
+        if (bloco.SegundosGastos.HasValue)
+            return Math.Max(0, (int)Math.Round(bloco.SegundosGastos.Value / 60d));
+
+        return CalcularMinutos(bloco);
     }
 
     private static bool ConcluidoNoPrazo(BlocoEstudo bloco)
@@ -285,11 +308,32 @@ public class IndexModel : PageModel
                bloco.DataConclusao.Value > PrazoFinal(bloco);
     }
 
+    private static bool TemHoraExtra(BlocoEstudo bloco)
+    {
+        return bloco.MinutosExtras > 0 || bloco.Status == StatusBloco.HoraExtra;
+    }
+
+    private static int CalcularMinutosExtras(BlocoEstudo bloco)
+    {
+        if (bloco.MinutosExtras > 0)
+            return bloco.MinutosExtras;
+
+        return bloco.Status == StatusBloco.HoraExtra
+            ? CalcularMinutosGastos(bloco)
+            : 0;
+    }
+
     private static DateTime PrazoFinal(BlocoEstudo bloco)
     {
-        return TimeSpan.TryParse(bloco.HoraFim, out var fim)
-            ? bloco.Data.Date.Add(fim)
-            : bloco.Data.Date.AddDays(1).AddTicks(-1);
+        if (!TimeSpan.TryParse(bloco.HoraInicio, out var inicio) ||
+            !TimeSpan.TryParse(bloco.HoraFim, out var fim))
+            return bloco.Data.Date.AddDays(1).AddTicks(-1);
+
+        var prazo = bloco.Data.Date.Add(fim);
+        if (fim <= inicio)
+            prazo = prazo.AddDays(1);
+
+        return prazo;
     }
 
     public record DashboardDia(DateTime Data, int Total, int Concluidos, int Progresso);

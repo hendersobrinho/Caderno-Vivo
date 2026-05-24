@@ -46,6 +46,21 @@ public class BlocoEstudo
     [Display(Name = "Conclusão")]
     public DateTime? DataConclusao { get; set; }
 
+    [Display(Name = "Minutos extras")]
+    public int MinutosExtras { get; set; }
+
+    [Display(Name = "Iniciado em")]
+    public DateTime? IniciadoEm { get; set; }
+
+    [Display(Name = "Segundos pausados")]
+    public int SegundosPausados { get; set; }
+
+    [Display(Name = "Segundos gastos")]
+    public int? SegundosGastos { get; set; }
+
+    [Display(Name = "Pausado em")]
+    public DateTime? PausadoEm { get; set; }
+
     [Display(Name = "Onde parei")]
     public string? OndeParei { get; set; }
 

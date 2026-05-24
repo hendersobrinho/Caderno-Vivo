@@ -102,6 +102,10 @@ public class IndexModel : PageModel
         bloco.HoraFim = horaFim;
         bloco.Titulo = titulo.Trim();
         bloco.Descricao = descricao?.Trim();
+        bloco.IniciadoEm = null;
+        bloco.SegundosPausados = 0;
+        bloco.SegundosGastos = null;
+        bloco.PausadoEm = null;
 
         await _db.SaveChangesAsync();
 
@@ -144,6 +148,9 @@ public class IndexModel : PageModel
         if (!TimeSpan.TryParse(bloco.HoraInicio, out var inicio) ||
             !TimeSpan.TryParse(bloco.HoraFim, out var fim))
             return 0;
+
+        if (fim <= inicio)
+            fim = fim.Add(TimeSpan.FromDays(1));
 
         var duracao = fim - inicio;
         return duracao.TotalMinutes > 0 ? (int)Math.Round(duracao.TotalMinutes) : 0;

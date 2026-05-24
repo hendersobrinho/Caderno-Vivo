@@ -60,12 +60,20 @@
     else
     {
         var foco = Model.BlocoAtual
+            ?? Model.FilaBlocos.FirstOrDefault(b => b.Status == StatusBloco.Pausado)
             ?? Model.FilaBlocos.FirstOrDefault(b => b.Status == StatusBloco.Agendado)
             ?? Model.FilaBlocos.First();
         var focoStatus = DiasHelper.ClasseStatusBloco(foco.Status);
         var progressoFila = Model.FilaBlocos.Count > 0
             ? (int)Math.Round((double)Model.BlocosConcluidosFila / Model.FilaBlocos.Count * 100)
             : 0;
+        var focoTemHoraExtra = foco.MinutosExtras > 0;
+        var focoTemCronometroAtivo = foco.Status == StatusBloco.EmAndamento || foco.Status == StatusBloco.Pausado;
+        var textoInicialCronometro = foco.Status == StatusBloco.EmAndamento
+            ? "--:--"
+            : foco.Status == StatusBloco.Pausado
+                ? "Pausado"
+                : "Aguardando";
 
         <div class="focus-shell mb-3">
             <div class="focus-main">
@@ -80,6 +88,10 @@
                 }
                 <div class="focus-tags">
                     <span class="badge bg-@focoStatus">@DiasHelper.LabelStatusBloco(foco.Status)</span>
+                    @if (focoTemHoraExtra)
+                    {
+                        <span class="badge bg-dark">Hora extra +@foco.MinutosExtras min</span>
+                    }
                     @if (foco.Materia != null)
                     {
                         <span class="badge bg-primary-subtle text-primary-emphasis">@foco.Materia.Nome</span>
@@ -93,7 +105,16 @@
                     }
                 </div>
                 <div class="focus-actions">
-                    @if (foco.Status != StatusBloco.EmAndamento)
+                    @if (foco.Status == StatusBloco.Pausado)
+                    {
+                        <form method="post" asp-page-handler="Retomar">
+                            <input type="hidden" name="id" value="@foco.Id" />
+                            <button type="submit" class="btn btn-warning">
+                                <i class="bi bi-play-fill"></i>Retomar
+                            </button>
+                        </form>
+                    }
+                    else if (foco.Status != StatusBloco.EmAndamento)
                     {
                         <form method="post" asp-page-handler="Iniciar">
                             <input type="hidden" name="id" value="@foco.Id" />
@@ -104,7 +125,16 @@
                     }
                     else
                     {
-                        <button class="btn btn-success" onclick="abrirFinalizar(@foco.Id)">
+                        <form method="post" asp-page-handler="Pausar">
+                            <input type="hidden" name="id" value="@foco.Id" />
+                            <button type="submit" class="btn btn-outline-warning">
+                                <i class="bi bi-pause-fill"></i>Pausar tempo
+                            </button>
+                        </form>
+                    }
+                    @if (foco.Status == StatusBloco.EmAndamento || foco.Status == StatusBloco.Pausado)
+                    {
+                        <button class="btn btn-success" type="button" onclick="abrirFinalizar(@foco.Id)">
                             <i class="bi bi-check2-circle"></i>Finalizar bloco
                         </button>
                     }
@@ -116,19 +146,116 @@
                         <i class="bi bi-bell"></i>Ativar alertas
                     </button>
                 </div>
+                @if (foco.Status == StatusBloco.EmAndamento || foco.Status == StatusBloco.Pausado)
+                {
+                    <div class="d-flex gap-2 flex-wrap mt-3">
+                        <form method="post" asp-page-handler="AdicionarTempo">
+                            <input type="hidden" name="id" value="@foco.Id" />
+                            <input type="hidden" name="minutos" value="10" />
+                            <button type="submit" class="btn btn-sm btn-outline-dark">
+                                <i class="bi bi-plus-lg"></i>+10 min extra
+                            </button>
+                        </form>
+                        <form method="post" asp-page-handler="AdicionarTempo">
+                            <input type="hidden" name="id" value="@foco.Id" />
+                            <input type="hidden" name="minutos" value="15" />
+                            <button type="submit" class="btn btn-sm btn-outline-dark">
+                                <i class="bi bi-plus-lg"></i>+15 min extra
+                            </button>
+                        </form>
+                        <form method="post" asp-page-handler="AdicionarTempo">
+                            <input type="hidden" name="id" value="@foco.Id" />
+                            <input type="hidden" name="minutos" value="30" />
+                            <button type="submit" class="btn btn-sm btn-outline-dark">
+                                <i class="bi bi-plus-lg"></i>+30 min extra
+                            </button>
+                        </form>
+                    </div>
+                }
             </div>
             <div class="focus-timer">
                 <span class="timer-label">Cronômetro</span>
-                <div id="timer-display" data-running="@(foco.Status == StatusBloco.EmAndamento ? "true" : "false")">
-                    @(foco.Status == StatusBloco.EmAndamento ? "--:--" : "Aguardando")
+                <div data-live-timer
+                     data-status="@foco.Status"
+                     data-hora-inicio="@foco.HoraInicio"
+                     data-hora-fim="@foco.HoraFim"
+                     data-pausado-em="@(foco.PausadoEm?.ToString("o") ?? "")">
+                    @textoInicialCronometro
                 </div>
-                <div class="timer-window">@foco.HoraInicio - @foco.HoraFim</div>
+                <div class="timer-window">
+                    @foco.HoraInicio - @foco.HoraFim
+                    @if (focoTemHoraExtra)
+                    {
+                        <span> · hora extra +@foco.MinutosExtras min</span>
+                    }
+                </div>
                 <div class="progress mt-3" style="height:6px">
                     <div class="progress-bar" style="width:@progressoFila%"></div>
                 </div>
                 <small class="text-muted">@Model.BlocosConcluidosFila/@Model.FilaBlocos.Count bloco(s) concluído(s)</small>
             </div>
         </div>
+
+        @if (focoTemCronometroAtivo)
+        {
+            <aside class="floating-timer @(foco.Status == StatusBloco.Pausado ? "is-paused" : "is-running")"
+                   data-floating-timer-shell>
+                <div class="floating-timer-head">
+                    <div class="d-flex align-items-start gap-2">
+                        <span class="floating-timer-pulse" aria-hidden="true"></span>
+                        <div>
+                            <span class="floating-timer-kicker">
+                                @(foco.Status == StatusBloco.Pausado ? "Bloco pausado" : "Bloco rolando")
+                            </span>
+                            <strong>@foco.Titulo</strong>
+                        </div>
+                    </div>
+                    <span class="badge bg-@focoStatus">@DiasHelper.LabelStatusBloco(foco.Status)</span>
+                </div>
+
+                <div class="floating-timer-display"
+                     data-live-timer
+                     data-status="@foco.Status"
+                     data-hora-inicio="@foco.HoraInicio"
+                     data-hora-fim="@foco.HoraFim"
+                     data-pausado-em="@(foco.PausadoEm?.ToString("o") ?? "")">
+                    @textoInicialCronometro
+                </div>
+
+                <div class="floating-timer-meta">
+                    <span>@foco.HoraInicio - @foco.HoraFim</span>
+                    @if (focoTemHoraExtra)
+                    {
+                        <span>· extra +@foco.MinutosExtras min</span>
+                    }
+                </div>
+
+                <div class="floating-timer-actions">
+                    @if (foco.Status == StatusBloco.Pausado)
+                    {
+                        <form method="post" asp-page-handler="Retomar">
+                            <input type="hidden" name="id" value="@foco.Id" />
+                            <button type="submit" class="btn btn-warning btn-sm">
+                                <i class="bi bi-play-fill"></i>Retomar
+                            </button>
+                        </form>
+                    }
+                    else
+                    {
+                        <form method="post" asp-page-handler="Pausar">
+                            <input type="hidden" name="id" value="@foco.Id" />
+                            <button type="submit" class="btn btn-outline-warning btn-sm">
+                                <i class="bi bi-pause-fill"></i>Pausar
+                            </button>
+                        </form>
+                    }
+
+                    <button class="btn btn-success btn-sm" type="button" onclick="abrirFinalizar(@foco.Id)">
+                        <i class="bi bi-check2-circle"></i>Finalizar
+                    </button>
+                </div>
+            </aside>
+        }
 
         @if (Model.MostrandoProximaFila && Model.InicioSemanaProximaData.HasValue)
         {
@@ -151,7 +278,8 @@
                 var b = Model.FilaBlocos[i];
                 var isAtual = Model.BlocoAtual?.Id == b.Id;
                 var itemClass = isAtual ? "queue-item active" : "queue-item";
-                <div class="@itemClass">
+                var blocoTemHoraExtra = b.MinutosExtras > 0;
+                <div class="@itemClass" id="bloco-@b.Id">
                     <div class="queue-index">@(i + 1)</div>
                     <div class="queue-time">
                         <span>@b.HoraInicio</span>
@@ -190,9 +318,22 @@
                             {
                                 <span><i class="bi bi-bookmark"></i>@b.OndeParei</span>
                             }
+                            @if (blocoTemHoraExtra)
+                            {
+                                <span><i class="bi bi-clock-history"></i>Hora extra +@b.MinutosExtras min</span>
+                            }
                         </div>
                         <div class="queue-actions">
-                            @if (b.Status != StatusBloco.EmAndamento)
+                            @if (b.Status == StatusBloco.Pausado)
+                            {
+                                <form method="post" asp-page-handler="Retomar">
+                                    <input type="hidden" name="id" value="@b.Id" />
+                                    <button type="submit" class="btn btn-sm btn-outline-warning">
+                                        <i class="bi bi-play-fill"></i>Retomar
+                                    </button>
+                                </form>
+                            }
+                            else if (b.Status != StatusBloco.EmAndamento)
                             {
                                 <form method="post" asp-page-handler="Iniciar">
                                     <input type="hidden" name="id" value="@b.Id" />
@@ -201,11 +342,30 @@
                                     </button>
                                 </form>
                             }
-                            @if (b.Status == StatusBloco.Agendado || b.Status == StatusBloco.EmAndamento)
+                            @if (b.Status == StatusBloco.EmAndamento)
                             {
-                                <button class="btn btn-sm btn-outline-success" onclick="abrirFinalizar(@b.Id)">
+                                <form method="post" asp-page-handler="Pausar">
+                                    <input type="hidden" name="id" value="@b.Id" />
+                                    <button type="submit" class="btn btn-sm btn-outline-warning">
+                                        <i class="bi bi-pause-fill"></i>Pausar
+                                    </button>
+                                </form>
+                            }
+                            @if (b.Status == StatusBloco.Agendado || b.Status == StatusBloco.EmAndamento || b.Status == StatusBloco.Pausado)
+                            {
+                                <button class="btn btn-sm btn-outline-success" type="button" onclick="abrirFinalizar(@b.Id)">
                                     <i class="bi bi-check2"></i>Finalizar
                                 </button>
+                            }
+                            @if (b.Status == StatusBloco.EmAndamento || b.Status == StatusBloco.Pausado)
+                            {
+                                <form method="post" asp-page-handler="AdicionarTempo">
+                                    <input type="hidden" name="id" value="@b.Id" />
+                                    <input type="hidden" name="minutos" value="15" />
+                                    <button type="submit" class="btn btn-sm btn-outline-dark">
+                                        <i class="bi bi-plus-lg"></i>+15
+                                    </button>
+                                </form>
                             }
                             <button class="btn btn-sm btn-outline-secondary" type="button"
                                     data-bs-toggle="collapse" data-bs-target="#ajustar-fila-@b.Id">
@@ -266,6 +426,11 @@
                 </div>
             }
         </div>
+
+        @if (focoTemCronometroAtivo)
+        {
+            <div class="floating-timer-spacer" aria-hidden="true"></div>
+        }
     }
 </div>
 
@@ -392,6 +557,7 @@
                                 <i class="bi bi-clock-history me-1"></i>Hora Extra
                             </button>
                         </div>
+                        <div class="form-text mt-2">Os minutos adicionados em "tempo extra" ja entram nas métricas de hora extra, mesmo se você finalizar como concluído.</div>
                     </div>
 
                     <div class="mb-3">
@@ -454,27 +620,78 @@ function setStatus(status, btn) {
 
 // ===== TIMER =====
 (function() {
-    var timerEl = document.getElementById('timer-display');
-    if (!timerEl) return;
+    var timerEls = Array.from(document.querySelectorAll('[data-live-timer]'));
+    if (!timerEls.length) return;
 
-    var horaFimStr = '@(Model.BlocoAtual?.HoraFim ?? "")';
-    if (!horaFimStr) return;
+    var baseTimerEl = timerEls[0];
+    var status = baseTimerEl.dataset.status || '';
+    var horaInicioStr = baseTimerEl.dataset.horaInicio || '';
+    var horaFimStr = baseTimerEl.dataset.horaFim || '';
+    var pausadoEmStr = baseTimerEl.dataset.pausadoEm || '';
+    if (!horaFimStr || (status !== 'EmAndamento' && status !== 'Pausado')) return;
 
-    var parts = horaFimStr.split(':');
+    function atualizarTemporizadores(texto, emPerigo) {
+        timerEls.forEach(function(timerEl) {
+            timerEl.textContent = texto;
+            timerEl.classList.toggle('text-danger', !!emPerigo);
+        });
+    }
+
+    function atualizarEstadoFlutuante(estado) {
+        document.querySelectorAll('[data-floating-timer-shell]').forEach(function(shell) {
+            shell.classList.remove('is-running', 'is-paused', 'is-finished');
+            if (estado) shell.classList.add(estado);
+        });
+    }
+
+    function montarHorario(hora, base, horaInicio) {
+        var parts = hora.split(':').map(Number);
+        var data = new Date(base.getFullYear(), base.getMonth(), base.getDate(),
+            parts[0], parts[1], 0);
+
+        if (horaInicio) {
+            var inicioParts = horaInicio.split(':').map(Number);
+            var cruzouMeiaNoite =
+                parts[0] < inicioParts[0] ||
+                (parts[0] === inicioParts[0] && parts[1] <= inicioParts[1]);
+
+            if (cruzouMeiaNoite) data.setDate(data.getDate() + 1);
+        }
+
+        return data;
+    }
+
+    function formatar(diff) {
+        var total = Math.max(0, diff);
+        var h = Math.floor(total / 3600);
+        var m = Math.floor((total % 3600) / 60);
+        var s = total % 60;
+        return (h > 0 ? h + ':' : '') +
+            String(m).padStart(2, '0') + ':' +
+            String(s).padStart(2, '0');
+    }
+
     var hoje = new Date();
-    var fim = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(),
-                       parseInt(parts[0]), parseInt(parts[1]), 0);
+    var fim = montarHorario(horaFimStr, hoje, horaInicioStr);
 
     var notif5min = false;
     var notifFim = false;
+
+    if (status === 'Pausado' && pausadoEmStr) {
+        var pausadoEm = new Date(pausadoEmStr);
+        var diffPausado = Math.floor((fim - pausadoEm) / 1000);
+        atualizarTemporizadores('Pausado · ' + formatar(diffPausado), false);
+        atualizarEstadoFlutuante('is-paused');
+        return;
+    }
 
     function tick() {
         var agora = new Date();
         var diff = Math.floor((fim - agora) / 1000);
 
         if (diff < 0) {
-            timerEl.textContent = 'ENCERRADO';
-            timerEl.classList.add('text-danger');
+            atualizarTemporizadores('ENCERRADO', true);
+            atualizarEstadoFlutuante('is-finished');
             if (!notifFim) {
                 notifFim = true;
                 tocarAlarme(880, 0.8, 1.0);
@@ -483,14 +700,8 @@ function setStatus(status, btn) {
             return;
         }
 
-        var h = Math.floor(diff / 3600);
-        var m = Math.floor((diff % 3600) / 60);
-        var s = diff % 60;
-
-        var texto = (h > 0 ? h + ':' : '') +
-                    String(m).padStart(2, '0') + ':' +
-                    String(s).padStart(2, '0');
-        timerEl.textContent = texto;
+        atualizarTemporizadores(formatar(diff), false);
+        atualizarEstadoFlutuante('is-running');
 
         if (diff <= 300 && !notif5min) {
             notif5min = true;

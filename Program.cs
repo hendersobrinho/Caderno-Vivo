@@ -37,6 +37,11 @@ using (var scope = app.Services.CreateScope())
             ""ArtigoId"" INTEGER NULL,
             ""Status"" INTEGER NOT NULL DEFAULT 0,
             ""DataConclusao"" TEXT NULL,
+            ""MinutosExtras"" INTEGER NOT NULL DEFAULT 0,
+            ""IniciadoEm"" TEXT NULL,
+            ""SegundosPausados"" INTEGER NOT NULL DEFAULT 0,
+            ""SegundosGastos"" INTEGER NULL,
+            ""PausadoEm"" TEXT NULL,
             ""OndeParei"" TEXT NULL,
             ""ProximoPasso"" TEXT NULL,
             ""Duvidas"" TEXT NULL,
@@ -108,6 +113,31 @@ using (var scope = app.Services.CreateScope())
     if (!ColumnExists(db, "BloquesEstudo", "DataConclusao"))
     {
         db.Database.ExecuteSqlRaw(@"ALTER TABLE ""BloquesEstudo"" ADD COLUMN ""DataConclusao"" TEXT NULL");
+    }
+
+    if (!ColumnExists(db, "BloquesEstudo", "MinutosExtras"))
+    {
+        db.Database.ExecuteSqlRaw(@"ALTER TABLE ""BloquesEstudo"" ADD COLUMN ""MinutosExtras"" INTEGER NOT NULL DEFAULT 0");
+    }
+
+    if (!ColumnExists(db, "BloquesEstudo", "IniciadoEm"))
+    {
+        db.Database.ExecuteSqlRaw(@"ALTER TABLE ""BloquesEstudo"" ADD COLUMN ""IniciadoEm"" TEXT NULL");
+    }
+
+    if (!ColumnExists(db, "BloquesEstudo", "SegundosPausados"))
+    {
+        db.Database.ExecuteSqlRaw(@"ALTER TABLE ""BloquesEstudo"" ADD COLUMN ""SegundosPausados"" INTEGER NOT NULL DEFAULT 0");
+    }
+
+    if (!ColumnExists(db, "BloquesEstudo", "SegundosGastos"))
+    {
+        db.Database.ExecuteSqlRaw(@"ALTER TABLE ""BloquesEstudo"" ADD COLUMN ""SegundosGastos"" INTEGER NULL");
+    }
+
+    if (!ColumnExists(db, "BloquesEstudo", "PausadoEm"))
+    {
+        db.Database.ExecuteSqlRaw(@"ALTER TABLE ""BloquesEstudo"" ADD COLUMN ""PausadoEm"" TEXT NULL");
     }
 }
 

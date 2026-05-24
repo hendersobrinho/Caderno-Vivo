@@ -4,6 +4,8 @@
 @using CadernoVivo.Models
 @{
     ViewData["Title"] = "Linha do Tempo";
+    var blocoAtivo = Model.BlocosDia.FirstOrDefault(b =>
+        b.Status == StatusBloco.EmAndamento || b.Status == StatusBloco.Pausado);
 }
 
 @functions {
@@ -13,14 +15,50 @@
             !TimeSpan.TryParse(bloco.HoraFim, out var fim))
             return 50;
 
+        if (fim <= inicio)
+            fim = fim.Add(TimeSpan.FromDays(1));
+
         var duracao = fim - inicio;
         return duracao.TotalMinutes > 0 ? (int)Math.Round(duracao.TotalMinutes) : 50;
+    }
+
+    private static int SegundosPlanejados(BlocoEstudo bloco) =>
+        Math.Max(60, DuracaoMinutos(bloco) * 60) + (bloco.MinutosExtras * 60);
+
+    private static int SegundosRestantes(BlocoEstudo bloco)
+    {
+        var total = SegundosPlanejados(bloco);
+        if (!bloco.IniciadoEm.HasValue)
+            return total;
+
+        var fimMedicao = bloco.Status == StatusBloco.Pausado && bloco.PausadoEm.HasValue
+            ? bloco.PausadoEm.Value
+            : DateTime.Now;
+
+        var gastos = fimMedicao - bloco.IniciadoEm.Value - TimeSpan.FromSeconds(bloco.SegundosPausados);
+        return Math.Max(0, total - (int)Math.Round(gastos.TotalSeconds));
+    }
+
+    private static string FormatSegundos(int totalSegundos)
+    {
+        var seguros = Math.Max(0, totalSegundos);
+        var horas = seguros / 3600;
+        var minutos = (seguros % 3600) / 60;
+        var segundos = seguros % 60;
+
+        return horas > 0
+            ? $"{horas}:{minutos:00}:{segundos:00}"
+            : $"{minutos:00}:{segundos:00}";
     }
 }
 
 @section Breadcrumb {
     <li class="breadcrumb-item active">Linha do Tempo</li>
 }
+
+<form id="timelineAsyncToken" method="post" class="d-none">
+    @Html.AntiForgeryToken()
+</form>
 
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <div>
@@ -78,6 +116,51 @@
     }
 </div>
 
+<aside class="floating-timer @(blocoAtivo == null ? "d-none" : blocoAtivo.Status == StatusBloco.Pausado ? "is-paused" : "is-running")"
+       id="timelineFloatingTimer">
+    <div class="floating-timer-head">
+        <div class="d-flex align-items-start gap-2">
+            <span class="floating-timer-pulse" aria-hidden="true"></span>
+            <div>
+                <span class="floating-timer-kicker" id="timelineFloatingKicker">
+                    @if (blocoAtivo != null)
+                    {
+                        @(blocoAtivo.Data.Date < DateTime.Today
+                            ? blocoAtivo.Status == StatusBloco.Pausado ? "Atrasado pausado" : "Atrasado rolando"
+                            : blocoAtivo.Status == StatusBloco.Pausado ? "Bloco pausado" : "Bloco rolando")
+                    }
+                </span>
+                <strong id="timelineFloatingTitle">@blocoAtivo?.Titulo</strong>
+            </div>
+        </div>
+        <span class="badge @(blocoAtivo != null ? $"bg-{DiasHelper.ClasseStatusBloco(blocoAtivo.Status)}" : "bg-secondary")"
+              id="timelineFloatingStatus">
+            @(blocoAtivo != null ? DiasHelper.LabelStatusBloco(blocoAtivo.Status) : "")
+        </span>
+    </div>
+
+    <div class="floating-timer-display" id="timelineFloatingDisplay">
+        @if (blocoAtivo != null)
+        {
+            var restantes = SegundosRestantes(blocoAtivo);
+            @(blocoAtivo.Status == StatusBloco.Pausado
+                ? $"Pausado · {FormatSegundos(restantes)}"
+                : FormatSegundos(restantes))
+        }
+    </div>
+
+    <div class="floating-timer-meta" id="timelineFloatingMeta">
+        @if (blocoAtivo != null)
+        {
+            <span>Contador de @((int)Math.Ceiling(SegundosPlanejados(blocoAtivo) / 60d)) min</span>
+            @if (blocoAtivo.MinutosExtras > 0)
+            {
+                <span>· extra +@blocoAtivo.MinutosExtras min</span>
+            }
+        }
+    </div>
+</aside>
+
 <div class="timeline-detail">
     <div class="day-panel">
         <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
@@ -89,6 +172,10 @@
                     @if (Model.MinutosDia > 0)
                     {
                         <span> · @Model.MinutosDia min planejados</span>
+                    }
+                    @if (Model.MinutosRegistradosDia > 0)
+                    {
+                        <span> · @Model.MinutosRegistradosDia min registrados</span>
                     }
                 </div>
             </div>
@@ -119,7 +206,14 @@
                                    bloco.Status != StatusBloco.NaoFeito;
                     var collapseId = $"blocoDetalhe{bloco.Id}";
                     var duracao = DuracaoMinutos(bloco);
-                    <div class="day-block interactive @(atrasado ? "late" : "")">
+                    var temHoraExtra = bloco.MinutosExtras > 0;
+                    var estaAtivo = bloco.Status == StatusBloco.EmAndamento || bloco.Status == StatusBloco.Pausado;
+                    var minutosGastos = bloco.SegundosGastos.HasValue
+                        ? Math.Max(0, (int)Math.Round(bloco.SegundosGastos.Value / 60d))
+                        : 0;
+                    var totalSegundos = SegundosPlanejados(bloco);
+                    var restantes = SegundosRestantes(bloco);
+                    <div class="day-block interactive @(atrasado ? "late" : "")" data-timeline-block="@bloco.Id">
                         <button class="day-block-trigger" type="button"
                                 data-bs-toggle="collapse" data-bs-target="#@collapseId"
                                 aria-expanded="false" aria-controls="@collapseId">
@@ -130,7 +224,7 @@
                             <div class="block-content">
                                 <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap">
                                     <div>
-                                        <div class="fw-bold">@bloco.Titulo</div>
+                                        <div class="fw-bold" data-timeline-title="@bloco.Id">@bloco.Titulo</div>
                                         @if (!string.IsNullOrWhiteSpace(bloco.Descricao))
                                         {
                                             <div class="text-muted small block-preview">@bloco.Descricao</div>
@@ -143,8 +237,13 @@
                                                 Atrasado
                                             </span>
                                         }
-                                        <span class="badge bg-@DiasHelper.ClasseStatusBloco(bloco.Status)">
+                                        <span class="badge bg-@DiasHelper.ClasseStatusBloco(bloco.Status)"
+                                              data-block-status-badge="@bloco.Id">
                                             @DiasHelper.LabelStatusBloco(bloco.Status)
+                                        </span>
+                                        <span class="badge bg-dark @(temHoraExtra ? "" : "d-none")"
+                                              data-block-extra-badge="@bloco.Id">
+                                            +@bloco.MinutosExtras min extra
                                         </span>
                                         <i class="bi bi-chevron-down text-muted"></i>
                                     </div>
@@ -185,6 +284,16 @@
                                             <i class="bi bi-sticky"></i>@bloco.Observacao
                                         </div>
                                     }
+                                    <div class="activity-note @(temHoraExtra ? "" : "d-none")"
+                                         data-block-extra-note="@bloco.Id">
+                                        <i class="bi bi-clock-history"></i>Hora extra registrada: +@bloco.MinutosExtras min
+                                    </div>
+                                    @if (minutosGastos > 0)
+                                    {
+                                        <div class="activity-note">
+                                            <i class="bi bi-stopwatch"></i>Tempo gasto salvo: @minutosGastos min
+                                        </div>
+                                    }
                                     @if (!string.IsNullOrWhiteSpace(bloco.OndeParei) ||
                                          !string.IsNullOrWhiteSpace(bloco.ProximoPasso) ||
                                          !string.IsNullOrWhiteSpace(bloco.Duvidas))
@@ -211,16 +320,53 @@
                                         <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
                                             <div>
                                                 <div class="dash-eyebrow">Executar daqui mesmo</div>
-                                                <strong>Contador de @duracao min</strong>
+                                                <strong data-block-duration-label="@bloco.Id">Contador de @duracao min</strong>
                                             </div>
-                                            <span class="timer-pill" data-timer-display="@bloco.Id">@duracao:00</span>
+                                            <span class="timer-pill"
+                                                  data-timeline-live-timer="@bloco.Id"
+                                                  data-status="@bloco.Status"
+                                                  data-total-seconds="@totalSegundos"
+                                                  data-minutes-extra="@bloco.MinutosExtras"
+                                                  data-started-at="@(bloco.IniciadoEm?.ToString("o") ?? "")"
+                                                  data-paused-at="@(bloco.PausadoEm?.ToString("o") ?? "")"
+                                                  data-paused-seconds="@bloco.SegundosPausados">
+                                                @(bloco.Status == StatusBloco.Pausado ? $"Pausado · {FormatSegundos(restantes)}" : FormatSegundos(restantes))
+                                            </span>
                                         </div>
-                                        <div class="d-flex gap-2 flex-wrap">
-                                            <button class="btn btn-primary btn-sm" type="button"
-                                                    data-start-timeline-timer="@bloco.Id"
-                                                    data-minutes="@duracao">
-                                                <i class="bi bi-play-fill"></i>Começar contador
-                                            </button>
+                                        <div class="progress mb-2" style="height:6px">
+                                            <div class="progress-bar"
+                                                 data-timeline-progress="@bloco.Id"
+                                                 style="width:@(Math.Min(100, (int)Math.Round((double)(totalSegundos - restantes) / totalSegundos * 100)))%"></div>
+                                        </div>
+                                        <div class="d-flex justify-content-between gap-2 flex-wrap small text-muted mb-2">
+                                            <span data-timeline-elapsed="@bloco.Id">Rodando: @FormatSegundos(totalSegundos - restantes)</span>
+                                            <span data-timeline-remaining="@bloco.Id">Faltam: @FormatSegundos(restantes)</span>
+                                        </div>
+                                        <div class="d-flex gap-2 flex-wrap" data-timeline-controls="@bloco.Id">
+                                            @if (bloco.Status == StatusBloco.Pausado)
+                                            {
+                                                <button class="btn btn-warning btn-sm" type="button"
+                                                        data-async-timeline-control="Retomar"
+                                                        data-id="@bloco.Id">
+                                                    <i class="bi bi-play-fill"></i>Retomar
+                                                </button>
+                                            }
+                                            else if (bloco.Status == StatusBloco.EmAndamento)
+                                            {
+                                                <button class="btn btn-outline-warning btn-sm" type="button"
+                                                        data-async-timeline-control="Pausar"
+                                                        data-id="@bloco.Id">
+                                                    <i class="bi bi-pause-fill"></i>Pausar
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <button class="btn btn-primary btn-sm" type="button"
+                                                        data-async-timeline-control="Iniciar"
+                                                        data-id="@bloco.Id">
+                                                    <i class="bi bi-play-fill"></i>Começar agora
+                                                </button>
+                                            }
                                             <form method="post" asp-page-handler="AtualizarStatus">
                                                 <input type="hidden" name="id" value="@bloco.Id" />
                                                 <input type="hidden" name="status" value="@StatusBloco.Concluido" />
@@ -235,6 +381,21 @@
                                                     Parcial
                                                 </button>
                                             </form>
+                                            @if (estaAtivo)
+                                            {
+                                                <button class="btn btn-outline-dark btn-sm" type="button"
+                                                        data-async-timeline-control="AdicionarTempo"
+                                                        data-id="@bloco.Id"
+                                                        data-minutos="10">+10</button>
+                                                <button class="btn btn-outline-dark btn-sm" type="button"
+                                                        data-async-timeline-control="AdicionarTempo"
+                                                        data-id="@bloco.Id"
+                                                        data-minutos="15">+15</button>
+                                                <button class="btn btn-outline-dark btn-sm" type="button"
+                                                        data-async-timeline-control="AdicionarTempo"
+                                                        data-id="@bloco.Id"
+                                                        data-minutos="30">+30</button>
+                                            }
                                         </div>
                                         <small class="text-muted d-block mt-2">
                                             Bom para atraso: você executa agora, finaliza e o histórico registra que foi feito fora do prazo.
@@ -307,47 +468,262 @@
     </div>
 </div>
 
+<div class="floating-timer-spacer @(blocoAtivo == null ? "d-none" : "")" id="timelineFloatingSpacer" aria-hidden="true"></div>
+
 @section Scripts {
     <script>
         (() => {
-            const timers = new Map();
+            const intervals = new Map();
+            const tokenInput = document.querySelector('#timelineAsyncToken input[name="__RequestVerificationToken"]');
+            const floatingTimer = document.getElementById('timelineFloatingTimer');
+            const floatingSpacer = document.getElementById('timelineFloatingSpacer');
+            const floatingTitle = document.getElementById('timelineFloatingTitle');
+            const floatingKicker = document.getElementById('timelineFloatingKicker');
+            const floatingStatus = document.getElementById('timelineFloatingStatus');
+            const floatingDisplay = document.getElementById('timelineFloatingDisplay');
+            const floatingMeta = document.getElementById('timelineFloatingMeta');
 
             function format(seconds) {
-                const minutes = Math.floor(seconds / 60).toString().padStart(2, '0');
-                const rest = Math.floor(seconds % 60).toString().padStart(2, '0');
-                return `${minutes}:${rest}`;
+                const total = Math.max(0, seconds);
+                const hours = Math.floor(total / 3600);
+                const minutes = Math.floor((total % 3600) / 60).toString().padStart(2, '0');
+                const rest = Math.floor(total % 60).toString().padStart(2, '0');
+                return hours > 0 ? `${hours}:${minutes}:${rest}` : `${minutes}:${rest}`;
             }
 
-            document.querySelectorAll('[data-start-timeline-timer]').forEach((button) => {
-                button.addEventListener('click', () => {
-                    const id = button.dataset.startTimelineTimer;
-                    const display = document.querySelector(`[data-timer-display="${id}"]`);
-                    const minutes = Number(button.dataset.minutes || 50);
-                    let remaining = Math.max(1, minutes) * 60;
+            function restantes(el) {
+                const status = el.dataset.status || '';
+                const totalSeconds = Number(el.dataset.totalSeconds || 0);
+                const startedAt = el.dataset.startedAt ? new Date(el.dataset.startedAt) : null;
+                const pausedAt = el.dataset.pausedAt ? new Date(el.dataset.pausedAt) : null;
+                const pausedSeconds = Number(el.dataset.pausedSeconds || 0);
 
-                    if (timers.has(id)) clearInterval(timers.get(id));
-                    if (display) display.textContent = format(remaining);
+                if (!startedAt || (status !== 'EmAndamento' && status !== 'Pausado')) {
+                    return totalSeconds;
+                }
 
-                    button.classList.remove('btn-primary');
-                    button.classList.add('btn-success');
-                    button.innerHTML = '<i class="bi bi-hourglass-split"></i>Rodando';
+                const fimMedicao = status === 'Pausado' && pausedAt ? pausedAt : new Date();
+                const gastos = Math.floor((fimMedicao - startedAt) / 1000) - pausedSeconds;
+                return Math.max(0, totalSeconds - Math.max(0, gastos));
+            }
 
-                    const interval = setInterval(() => {
-                        remaining -= 1;
-                        if (display) display.textContent = format(Math.max(0, remaining));
+            function render(el) {
+                const status = el.dataset.status || '';
+                const remaining = restantes(el);
+                el.textContent = status === 'Pausado'
+                    ? `Pausado · ${format(remaining)}`
+                    : format(remaining);
 
-                        if (remaining <= 0) {
-                            clearInterval(interval);
-                            timers.delete(id);
-                            button.classList.remove('btn-success');
-                            button.classList.add('btn-primary');
-                            button.innerHTML = '<i class="bi bi-play-fill"></i>Começar contador';
-                        }
-                    }, 1000);
+                const total = Number(el.dataset.totalSeconds || 0);
+                const elapsed = Math.max(0, total - remaining);
+                const id = el.dataset.timelineLiveTimer;
+                const progress = total > 0 ? Math.min(100, Math.round((elapsed / total) * 100)) : 0;
+                const progressEl = document.querySelector(`[data-timeline-progress="${id}"]`);
+                const elapsedEl = document.querySelector(`[data-timeline-elapsed="${id}"]`);
+                const remainingEl = document.querySelector(`[data-timeline-remaining="${id}"]`);
 
-                    timers.set(id, interval);
+                if (progressEl) progressEl.style.width = `${progress}%`;
+                if (elapsedEl) elapsedEl.textContent = `Rodando: ${format(elapsed)}`;
+                if (remainingEl) remainingEl.textContent = `Faltam: ${format(remaining)}`;
+
+                syncFloatingTimer({
+                    id,
+                    status,
+                    statusLabel: document.querySelector(`[data-block-status-badge="${id}"]`)?.textContent?.trim() || '',
+                    statusClass: document.querySelector(`[data-block-status-badge="${id}"]`)?.className.match(/bg-([^\s]+)/)?.[1] || 'secondary',
+                    minutesExtra: Number(el.dataset.minutesExtra || 0),
+                    remainingSeconds: remaining,
+                    totalMinutes: Math.max(1, Math.ceil(total / 60)),
+                    isPaused: status === 'Pausado',
+                    isStarted: status === 'EmAndamento' || status === 'Pausado',
+                    hasExtra: Number(el.dataset.minutesExtra || 0) > 0
                 });
+            }
+
+            function bindTimer(el) {
+                const id = el.dataset.timelineLiveTimer;
+                if (intervals.has(id)) {
+                    clearInterval(intervals.get(id));
+                    intervals.delete(id);
+                }
+
+                render(el);
+                if ((el.dataset.status || '') === 'EmAndamento') {
+                    const interval = setInterval(() => render(el), 1000);
+                    intervals.set(id, interval);
+                }
+            }
+
+            function getBlockTitle(id) {
+                return document.querySelector(`[data-timeline-title="${id}"]`)?.textContent?.trim() || 'Bloco em andamento';
+            }
+
+            function getBlockKicker(id, state) {
+                const isLate = document.querySelector(`[data-timeline-block="${id}"]`)?.classList.contains('late');
+                if (state.isPaused) return isLate ? 'Atrasado pausado' : 'Bloco pausado';
+                return isLate ? 'Atrasado rolando' : 'Bloco rolando';
+            }
+
+            function syncFloatingTimer(state) {
+                if (!floatingTimer || !floatingSpacer || !floatingTitle || !floatingKicker || !floatingStatus || !floatingDisplay || !floatingMeta) {
+                    return;
+                }
+
+                if (!state || !state.isStarted) {
+                    floatingTimer.classList.add('d-none');
+                    floatingSpacer.classList.add('d-none');
+                    return;
+                }
+
+                floatingTimer.classList.remove('d-none', 'is-running', 'is-paused', 'is-finished');
+                floatingSpacer.classList.remove('d-none');
+                floatingTimer.classList.add(state.isPaused ? 'is-paused' : 'is-running');
+
+                floatingTitle.textContent = getBlockTitle(state.id);
+                floatingKicker.textContent = getBlockKicker(state.id, state);
+                floatingStatus.className = `badge bg-${state.statusClass}`;
+                floatingStatus.textContent = state.statusLabel;
+                floatingDisplay.textContent = state.isPaused
+                    ? `Pausado · ${format(state.remainingSeconds)}`
+                    : format(state.remainingSeconds);
+
+                const extra = state.hasExtra ? ` · extra +${state.minutesExtra} min` : '';
+                floatingMeta.innerHTML = `<span>Contador de ${state.totalMinutes} min${extra}</span>`;
+            }
+
+            function buildControls(id, state) {
+                const statusUrl = new URL(window.location.href);
+                statusUrl.searchParams.set('handler', 'AtualizarStatus');
+                const statusAction = `${statusUrl.pathname}${statusUrl.search}`;
+
+                const startPause = state.isPaused
+                    ? `<button class="btn btn-warning btn-sm" type="button" data-async-timeline-control="Retomar" data-id="${id}"><i class="bi bi-play-fill"></i>Retomar</button>`
+                    : state.isRunning
+                        ? `<button class="btn btn-outline-warning btn-sm" type="button" data-async-timeline-control="Pausar" data-id="${id}"><i class="bi bi-pause-fill"></i>Pausar</button>`
+                        : `<button class="btn btn-primary btn-sm" type="button" data-async-timeline-control="Iniciar" data-id="${id}"><i class="bi bi-play-fill"></i>Começar agora</button>`;
+
+                const extraButtons = state.isStarted
+                    ? `
+                        <button class="btn btn-outline-dark btn-sm" type="button" data-async-timeline-control="AdicionarTempo" data-id="${id}" data-minutos="10">+10</button>
+                        <button class="btn btn-outline-dark btn-sm" type="button" data-async-timeline-control="AdicionarTempo" data-id="${id}" data-minutos="15">+15</button>
+                        <button class="btn btn-outline-dark btn-sm" type="button" data-async-timeline-control="AdicionarTempo" data-id="${id}" data-minutos="30">+30</button>
+                    `
+                    : '';
+
+                return `
+                    ${startPause}
+                    <form method="post" action="${statusAction}">
+                        <input name="__RequestVerificationToken" type="hidden" value="${tokenInput?.value || ''}">
+                        <input type="hidden" name="id" value="${id}" />
+                        <input type="hidden" name="status" value="Concluido" />
+                        <button class="btn btn-success btn-sm" type="submit"><i class="bi bi-check2"></i>Concluir</button>
+                    </form>
+                    <form method="post" action="${statusAction}">
+                        <input name="__RequestVerificationToken" type="hidden" value="${tokenInput?.value || ''}">
+                        <input type="hidden" name="id" value="${id}" />
+                        <input type="hidden" name="status" value="Parcial" />
+                        <button class="btn btn-outline-warning btn-sm" type="submit">Parcial</button>
+                    </form>
+                    ${extraButtons}
+                `;
+            }
+
+            function updateBlockUI(state) {
+                const id = state.id;
+                const timer = document.querySelector(`[data-timeline-live-timer="${id}"]`);
+                if (!timer) return;
+
+                timer.dataset.status = state.status;
+                timer.dataset.totalSeconds = state.totalSeconds;
+                timer.dataset.startedAt = state.startedAt || '';
+                timer.dataset.pausedAt = state.pausedAt || '';
+                timer.dataset.pausedSeconds = state.pausedSeconds || 0;
+                timer.dataset.minutesExtra = state.minutesExtra || 0;
+                bindTimer(timer);
+
+                const statusBadge = document.querySelector(`[data-block-status-badge="${id}"]`);
+                if (statusBadge) {
+                    statusBadge.className = `badge bg-${state.statusClass}`;
+                    statusBadge.textContent = state.statusLabel;
+                }
+
+                const extraBadge = document.querySelector(`[data-block-extra-badge="${id}"]`);
+                if (extraBadge) {
+                    extraBadge.textContent = `+${state.minutesExtra} min extra`;
+                    extraBadge.classList.toggle('d-none', !state.hasExtra);
+                }
+
+                const extraNote = document.querySelector(`[data-block-extra-note="${id}"]`);
+                if (extraNote) {
+                    extraNote.innerHTML = `<i class="bi bi-clock-history"></i>Hora extra registrada: +${state.minutesExtra} min`;
+                    extraNote.classList.toggle('d-none', !state.hasExtra);
+                }
+
+                const durationLabel = document.querySelector(`[data-block-duration-label="${id}"]`);
+                if (durationLabel) durationLabel.textContent = `Contador de ${state.totalMinutes} min`;
+
+                const controls = document.querySelector(`[data-timeline-controls="${id}"]`);
+                if (controls) controls.innerHTML = buildControls(id, state);
+
+                syncFloatingTimer(state);
+            }
+
+            async function sendControl(button) {
+                const action = button.dataset.asyncTimelineControl;
+                const id = button.dataset.id;
+                const minutos = button.dataset.minutos;
+                const params = new URLSearchParams();
+                params.set('__RequestVerificationToken', tokenInput?.value || '');
+                params.set('id', id);
+                if (minutos) params.set('minutos', minutos);
+
+                button.disabled = true;
+
+                try {
+                    const response = await fetch(`?handler=${encodeURIComponent(action)}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json'
+                        },
+                        body: params.toString()
+                    });
+
+                    const payload = await response.json();
+                    if (!response.ok || !payload.ok) {
+                        throw new Error(payload.message || 'Nao consegui atualizar o bloco.');
+                    }
+
+                    updateBlockUI(payload.block);
+                } catch (error) {
+                    alert(error.message || 'Nao consegui atualizar o bloco.');
+                } finally {
+                    button.disabled = false;
+                }
+            }
+
+            document.addEventListener('click', (event) => {
+                const button = event.target.closest('[data-async-timeline-control]');
+                if (!button) return;
+                event.preventDefault();
+                sendControl(button);
             });
+
+            document.querySelectorAll('[data-timeline-live-timer]').forEach(bindTimer);
+
+            // Auto-expandir e rolar para o bloco quando vier pelo fragmento da URL
+            const hash = window.location.hash;
+            if (hash) {
+                const target = document.querySelector(hash);
+                if (target) {
+                    const collapse = new bootstrap.Collapse(target, { toggle: false });
+                    collapse.show();
+                    target.addEventListener('shown.bs.collapse', () => {
+                        target.closest('[data-timeline-block]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }, { once: true });
+                }
+            }
         })();
     </script>
 }

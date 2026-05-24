@@ -72,6 +72,7 @@ public static class DiasHelper
         StatusBloco.NaoFeito    => "Não Feito",
         StatusBloco.Reagendado  => "Reagendado",
         StatusBloco.HoraExtra   => "Hora Extra",
+        StatusBloco.Pausado     => "Pausado",
         _                       => "?"
     };
 
@@ -84,6 +85,7 @@ public static class DiasHelper
         StatusBloco.NaoFeito    => "danger",
         StatusBloco.Reagendado  => "info",
         StatusBloco.HoraExtra   => "dark",
+        StatusBloco.Pausado     => "warning",
         _                       => "secondary"
     };
 
@@ -96,6 +98,7 @@ public static class DiasHelper
         StatusBloco.NaoFeito    => "bi-x-circle",
         StatusBloco.Reagendado  => "bi-calendar-plus",
         StatusBloco.HoraExtra   => "bi-clock-history",
+        StatusBloco.Pausado     => "bi-pause-circle",
         _                       => "bi-circle"
     };
 

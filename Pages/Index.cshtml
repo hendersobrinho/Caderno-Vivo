@@ -104,6 +104,11 @@
         <strong>@Model.HorasExtrasFeitas</strong>
         <small>@Model.MinutosExtrasFeitos min registrados</small>
     </div>
+    <div class="metric-card">
+        <span>Média por bloco</span>
+        <strong>@Model.MediaMinutosPorBloco min</strong>
+        <small>tempo médio real por atividade concluída</small>
+    </div>
 </div>
 
 <div class="dashboard-main-grid mb-4 @(Model.BlocosAtrasados.Any() ? "has-alerts" : "clean")">
@@ -130,7 +135,10 @@
                         @foreach (var bloco in Model.BlocosAtrasados)
                         {
                             <div class="action-row overdue">
-                                <div>
+                                <a asp-page="/LinhaDoTempo/Index"
+                                   asp-route-data="@bloco.Data.ToString("yyyy-MM-dd")"
+                                   asp-fragment="blocoDetalhe@(bloco.Id)"
+                                   class="text-decoration-none text-reset flex-grow-1 min-w-0">
                                     <div class="fw-semibold">@bloco.Titulo</div>
                                     <div class="dash-muted small">
                                         @bloco.Data.ToString("dd/MM") · @bloco.HoraInicio-@bloco.HoraFim
@@ -139,7 +147,7 @@
                                             <span> · @bloco.Materia.Nome</span>
                                         }
                                     </div>
-                                </div>
+                                </a>
                                 <div class="d-flex gap-1 flex-wrap justify-content-end">
                                     <form method="post" asp-page-handler="AdiarBloco">
                                         <input type="hidden" name="id" value="@bloco.Id" />
