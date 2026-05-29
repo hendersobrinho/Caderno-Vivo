@@ -694,7 +694,6 @@ function setStatus(status, btn) {
             atualizarEstadoFlutuante('is-finished');
             if (!notifFim) {
                 notifFim = true;
-                tocarAlarme(880, 0.8, 1.0);
                 notificar('Bloco encerrado', 'O tempo do bloco atual acabou.');
             }
             return;
@@ -705,7 +704,6 @@ function setStatus(status, btn) {
 
         if (diff <= 300 && !notif5min) {
             notif5min = true;
-            tocarAlarme(660, 0.4, 0.6);
             notificar('5 minutos restantes', '@(Model.BlocoAtual?.Titulo ?? "")');
         }
     }

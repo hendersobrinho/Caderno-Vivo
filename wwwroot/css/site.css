@@ -260,6 +260,170 @@ html[data-theme="dark"] .alert-danger {
     border-color: rgba(239,68,68,0.25);
     color: #f87171;
 }
+html[data-theme="dark"] .alert-warning {
+    background-color: rgba(245,158,11,0.12);
+    border-color: rgba(245,158,11,0.28);
+    color: #fbbf24;
+}
+html[data-theme="dark"] .alert-info {
+    background-color: rgba(6,182,212,0.12);
+    border-color: rgba(6,182,212,0.25);
+    color: #67e8f9;
+}
+
+/* ── Bootstrap subtle color system (app usa data-theme, não data-bs-theme) ── */
+html[data-theme="dark"] {
+    --bs-success-bg-subtle:   rgba(16,185,129,0.14);
+    --bs-warning-bg-subtle:   rgba(245,158,11,0.14);
+    --bs-danger-bg-subtle:    rgba(239,68,68,0.14);
+    --bs-info-bg-subtle:      rgba(6,182,212,0.14);
+    --bs-primary-bg-subtle:   rgba(99,153,255,0.14);
+    --bs-secondary-bg-subtle: var(--bg-hover);
+    --bs-light-bg-subtle:     var(--bg-hover);
+    --bs-dark-bg-subtle:      var(--bg-soft);
+
+    --bs-success-text-emphasis:   #4ade80;
+    --bs-warning-text-emphasis:   #fbbf24;
+    --bs-danger-text-emphasis:    #f87171;
+    --bs-info-text-emphasis:      #67e8f9;
+    --bs-primary-text-emphasis:   var(--accent-ink);
+    --bs-secondary-text-emphasis: var(--ink-700);
+    --bs-light-text-emphasis:     var(--ink-900);
+    --bs-dark-text-emphasis:      var(--ink-700);
+
+    --bs-success-border-subtle:   rgba(16,185,129,0.30);
+    --bs-warning-border-subtle:   rgba(245,158,11,0.30);
+    --bs-danger-border-subtle:    rgba(239,68,68,0.30);
+    --bs-info-border-subtle:      rgba(6,182,212,0.30);
+    --bs-primary-border-subtle:   rgba(99,153,255,0.30);
+    --bs-secondary-border-subtle: var(--line-2);
+    --bs-light-border-subtle:     var(--line);
+}
+
+/* bg-dark badge — ink-900 vira cor clara no dark mode, precisa override */
+html[data-theme="dark"] .bg-dark {
+    background: #0f172a !important;
+    color: #e2e8f0 !important;
+    border-color: #1e293b !important;
+}
+
+/* bg-secondary badge — hover fica var(--bg-hover) que pode ter pouco contraste */
+html[data-theme="dark"] .bg-secondary {
+    background: var(--bg-hover) !important;
+    color: var(--ink-700) !important;
+    border-color: var(--line-2) !important;
+}
+
+/* ── bg-light / bg-white — Bootstrap usa --bs-light direto, não subtle ── */
+html[data-theme="dark"] .bg-light {
+    background-color: var(--bg-hover) !important;
+    color: var(--ink-900) !important;
+}
+html[data-theme="dark"] .bg-white {
+    background-color: var(--bg-surface) !important;
+    color: var(--ink-900) !important;
+}
+
+/* ── Subtle color classes — só fundo, texto herda normalmente ── */
+html[data-theme="dark"] .bg-success-subtle  { background-color: rgba(16,185,129,0.13) !important; }
+html[data-theme="dark"] .bg-warning-subtle  { background-color: rgba(245,158,11,0.13) !important; }
+html[data-theme="dark"] .bg-danger-subtle   { background-color: rgba(239,68,68,0.13) !important; }
+html[data-theme="dark"] .bg-primary-subtle  { background-color: rgba(99,153,255,0.13) !important; }
+html[data-theme="dark"] .bg-info-subtle     { background-color: rgba(6,182,212,0.13) !important; }
+html[data-theme="dark"] .bg-secondary-subtle{ background-color: var(--bg-hover) !important; }
+
+/* ── Texto emphasis — para pares com subtle ── */
+html[data-theme="dark"] .text-success-emphasis  { color: #4ade80 !important; }
+html[data-theme="dark"] .text-warning-emphasis  { color: #fbbf24 !important; }
+html[data-theme="dark"] .text-danger-emphasis   { color: #f87171 !important; }
+html[data-theme="dark"] .text-primary-emphasis  { color: var(--accent-ink) !important; }
+html[data-theme="dark"] .text-info-emphasis     { color: #67e8f9 !important; }
+html[data-theme="dark"] .text-secondary-emphasis{ color: var(--ink-700) !important; }
+html[data-theme="dark"] .text-light-emphasis    { color: var(--ink-900) !important; }
+
+/* ── Border subtle ── */
+html[data-theme="dark"] .border-warning-subtle  { border-color: rgba(245,158,11,0.30) !important; }
+html[data-theme="dark"] .border-success-subtle  { border-color: rgba(16,185,129,0.30) !important; }
+html[data-theme="dark"] .border-danger-subtle   { border-color: rgba(239,68,68,0.30) !important; }
+html[data-theme="dark"] .border-primary-subtle  { border-color: rgba(99,153,255,0.30) !important; }
+
+/* ── Componentes com rgba branco hardcoded ── */
+html[data-theme="dark"] .schedule-steps span {
+    background: var(--bg-hover);
+    border-color: var(--line-2);
+    color: var(--ink-700);
+}
+html[data-theme="dark"] .week-metrics > div {
+    background: var(--bg-hover);
+    border-color: var(--line-2);
+}
+html[data-theme="dark"] .activity-focus {
+    background: linear-gradient(135deg, rgba(99,153,255,0.07), transparent 52%), var(--bg-surface);
+    border-color: rgba(99,153,255,0.20);
+}
+html[data-theme="dark"] .activity-notes-stack > div {
+    background: var(--bg-hover);
+    border-color: var(--line-2);
+    color: var(--ink-700);
+}
+html[data-theme="dark"] .day-block { background: var(--bg-hover); }
+
+/* ── Estados de semana e blocos ── */
+html[data-theme="dark"] .week-day.today {
+    background: rgba(59,130,246,0.12);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(99,153,255,0.18);
+}
+html[data-theme="dark"] .week-day.planned {
+    background: rgba(59,130,246,0.07);
+    border-color: rgba(99,153,255,0.25);
+}
+html[data-theme="dark"] .week-day.done {
+    background: rgba(16,185,129,0.10);
+    border-color: rgba(16,185,129,0.25);
+}
+html[data-theme="dark"] .week-day.danger {
+    background: rgba(239,68,68,0.10);
+    border-color: rgba(239,68,68,0.25);
+}
+html[data-theme="dark"] .week-block.done {
+    background: linear-gradient(90deg, rgba(16,185,129,0.10), var(--bg-surface) 52%);
+}
+html[data-theme="dark"] .week-block.late {
+    background: linear-gradient(90deg, rgba(239,68,68,0.10), var(--bg-surface) 52%);
+}
+html[data-theme="dark"] .week-column > header { background: var(--bg-hover); }
+html[data-theme="dark"] .week-column.today > header { background: rgba(59,130,246,0.10); }
+html[data-theme="dark"] .week-column.has-late > header { background: rgba(239,68,68,0.10); }
+html[data-theme="dark"] .timeline-day.done    { background: rgba(16,185,129,0.10); border-color: rgba(16,185,129,0.25); }
+html[data-theme="dark"] .timeline-day.danger  { background: rgba(239,68,68,0.10);  border-color: rgba(239,68,68,0.25); }
+html[data-theme="dark"] .timeline-day.future  { background: rgba(59,130,246,0.08); border-color: rgba(99,153,255,0.20); }
+
+/* ── Fila (queue) ── */
+html[data-theme="dark"] .queue-item.active { background: rgba(59,130,246,0.10); }
+
+/* ── Tabela ── */
+html[data-theme="dark"] .table-hover tbody tr:hover td { background: var(--bg-hover); }
+html[data-theme="dark"] .table-light,
+html[data-theme="dark"] .table-light td { background: var(--bg-hover) !important; color: var(--ink-900) !important; }
+html[data-theme="dark"] .table-primary,
+html[data-theme="dark"] .table-primary td {
+    background: rgba(99,153,255,0.12) !important;
+    color: var(--accent-ink) !important;
+}
+
+/* ── Proj-card stats ── */
+html[data-theme="dark"] .proj-stat-pill { background: var(--bg-hover); border-color: var(--line-2); }
+html[data-theme="dark"] .proj-stat-pill.urgente {
+    background: rgba(239,68,68,0.12); border-color: rgba(239,68,68,0.30); color: #f87171;
+}
+html[data-theme="dark"] .proj-stat-pill.urgente i,
+html[data-theme="dark"] .proj-stat-pill.urgente strong { color: #f87171; }
+html[data-theme="dark"] .proj-stat-pill.ok {
+    background: rgba(16,185,129,0.10); border-color: rgba(16,185,129,0.28); color: #4ade80;
+}
+html[data-theme="dark"] .proj-stat-pill.ok i,
+html[data-theme="dark"] .proj-stat-pill.ok strong { color: #4ade80; }
 
 /* ─── Accent variations (toggle via [data-accent] on <html>) ─── */
 html[data-accent="violet"] {
@@ -3622,4 +3786,145 @@ html[data-theme="dark"] .floating-timer.is-finished {
     .proj-panorama { grid-template-columns: 1fr; }
     .proj-card-head { flex-direction: column; }
     .proj-card-actions { justify-content: flex-start; }
+}
+
+/* ═══════════════════════════════════════════════════
+   DASHBOARD — componentes redesenhados
+   ═══════════════════════════════════════════════════ */
+
+/* Próximos blocos — lista compacta */
+.db-next-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.db-next-row {
+    display: grid;
+    grid-template-columns: 54px 1fr auto;
+    gap: 10px;
+    align-items: center;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--line);
+    transition: background 0.12s;
+    color: var(--ink-900);
+}
+
+.db-next-row:last-child { border-bottom: none; }
+
+.db-next-row:hover { background: var(--bg-soft); }
+
+.db-next-time {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    font-family: var(--font-mono);
+    line-height: 1.3;
+    flex-shrink: 0;
+}
+
+.db-next-time span {
+    font-size: 10px;
+    color: var(--ink-400);
+    font-weight: 600;
+}
+
+.db-next-time strong {
+    font-size: 14px;
+    color: var(--ink-900);
+    font-weight: 700;
+}
+
+.db-next-body {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+}
+
+.db-next-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink-900);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.db-next-sub {
+    font-size: 11px;
+    color: var(--ink-400);
+}
+
+.db-next-badge {
+    font-size: 10.5px;
+    padding: 3px 7px;
+    flex-shrink: 0;
+}
+
+/* Botão xs — menor que btn-sm */
+.btn-xs {
+    padding: 3px 8px;
+    font-size: 11.5px;
+    border-radius: var(--r-xs);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    line-height: 1.3;
+}
+
+/* Ações dos atrasados */
+.db-overdue-actions {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+/* Projeto em foco — redesign */
+.project-focus-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--line);
+    transition: background 0.12s;
+}
+
+.project-focus-row:last-child { border-bottom: none; }
+.project-focus-row:hover { background: var(--bg-soft); }
+
+.project-focus-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.project-focus-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.project-focus-pct {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--ink-400);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.project-focus-pct-big {
+    font-family: var(--font-mono);
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--ink-500);
+    flex-shrink: 0;
+    text-align: right;
+    line-height: 1;
+    min-width: 46px;
+}
+
+.project-focus-pct-big small {
+    font-size: 12px;
+    font-weight: 500;
 }

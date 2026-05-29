@@ -139,6 +139,11 @@ using (var scope = app.Services.CreateScope())
     {
         db.Database.ExecuteSqlRaw(@"ALTER TABLE ""BloquesEstudo"" ADD COLUMN ""PausadoEm"" TEXT NULL");
     }
+
+    if (!ColumnExists(db, "Projetos", "CronogramaJson"))
+    {
+        db.Database.ExecuteSqlRaw(@"ALTER TABLE ""Projetos"" ADD COLUMN ""CronogramaJson"" TEXT NULL");
+    }
 }
 
 if (!app.Environment.IsDevelopment())

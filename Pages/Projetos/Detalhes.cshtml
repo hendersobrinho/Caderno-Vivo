@@ -9,6 +9,10 @@
     var checklist = p.Checklist;
     var feitos = checklist.Count(c => c.Feito);
     var progresso = checklist.Count > 0 ? (int)((double)feitos / checklist.Count * 100) : 0;
+    var cronograma = p.Cronograma;
+    var totalSessoes = cronograma?.Sessoes.Count ?? 0;
+    var sessoesConcluidas = Model.SessoesConcluidas;
+    var progressoSessoes = totalSessoes > 0 ? (int)((double)sessoesConcluidas / totalSessoes * 100) : 0;
 }
 
 @section Breadcrumb {
@@ -40,15 +44,142 @@
         </div>
     </div>
     <div class="project-hero-progress">
-        <strong>@progresso%</strong>
-        <span>@feitos/@checklist.Count checklist</span>
-        <a asp-page="/Projetos/Index" class="btn btn-outline-secondary btn-sm mt-3">
+        @if (cronograma != null)
+        {
+            <strong>@sessoesConcluidas/@totalSessoes</strong>
+            <span>sessões</span>
+        }
+        else
+        {
+            <strong>@progresso%</strong>
+            <span>@feitos/@checklist.Count checklist</span>
+        }
+        @if (p.Status == StatusProjeto.Pausado && p.TemCronograma)
+        {
+            <form method="post" asp-page-handler="Retomar" class="mt-2">
+                <input type="hidden" name="id" value="@p.Id" />
+                <button type="submit" class="btn btn-warning btn-sm w-100">
+                    <i class="bi bi-play-fill me-1"></i>Retomar
+                </button>
+            </form>
+        }
+        else if (p.Status == StatusProjeto.EmAndamento && p.TemCronograma)
+        {
+            <form method="post" asp-page-handler="Pausar" class="mt-2">
+                <input type="hidden" name="id" value="@p.Id" />
+                <button type="submit" class="btn btn-outline-warning btn-sm w-100">
+                    <i class="bi bi-pause-fill me-1"></i>Pausar
+                </button>
+            </form>
+        }
+        <a asp-page="/Projetos/Index" class="btn btn-outline-secondary btn-sm mt-2">
             <i class="bi bi-arrow-left me-1"></i>Voltar
         </a>
     </div>
 </div>
 
 <div class="row g-3">
+
+    @if (cronograma != null)
+    {
+        <!-- Cronograma de Sessões -->
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <span><i class="bi bi-calendar-week me-2"></i>Cronograma de Sessões</span>
+                    <div class="d-flex align-items-center gap-3">
+                        @if (cronograma.Recorrencia != null)
+                        {
+                            <span class="text-muted small">
+                                <i class="bi bi-arrow-repeat me-1"></i>@cronograma.Recorrencia.DescricaoDias()
+                                · @cronograma.Recorrencia.HoraInicio–@cronograma.Recorrencia.HoraFim
+                            </span>
+                        }
+                        <span class="badge bg-primary">@sessoesConcluidas / @totalSessoes</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    @if (totalSessoes > 0)
+                    {
+                        <div class="progress mb-3" style="height:6px">
+                            <div class="progress-bar @(progressoSessoes == 100 ? "bg-success" : "")"
+                                 style="width:@progressoSessoes%"></div>
+                        </div>
+                    }
+
+                    <div class="row g-2">
+                        @for (int i = 0; i < cronograma.Sessoes.Count; i++)
+                        {
+                            var sessao = cronograma.Sessoes[i];
+                            var concluida = i < sessoesConcluidas;
+                            var atual = i == sessoesConcluidas;
+
+                            // Encontra o bloco vinculado a esta sessão (pelo título e ordem)
+                            var blocoVinculado = Model.BloquesVinculados
+                                .OrderBy(b => b.Data)
+                                .ElementAtOrDefault(i);
+
+                            <div class="col-md-6 col-lg-4">
+                                <div class="d-flex gap-2 align-items-start p-2 rounded
+                                    @(concluida ? "bg-success-subtle" : atual ? "bg-warning-subtle border border-warning-subtle" : "bg-light")">
+                                    <div class="mt-1 flex-shrink-0">
+                                        @if (concluida)
+                                        {
+                                            <i class="bi bi-check-circle-fill text-success"></i>
+                                        }
+                                        else if (atual)
+                                        {
+                                            <i class="bi bi-play-circle-fill text-warning"></i>
+                                        }
+                                        else
+                                        {
+                                            <i class="bi bi-circle text-muted"></i>
+                                        }
+                                    </div>
+                                    <div class="flex-grow-1 min-w-0">
+                                        <div class="small fw-semibold @(concluida ? "text-decoration-line-through text-muted" : "")">
+                                            @(i + 1). @sessao.Titulo
+                                        </div>
+                                        @if (!string.IsNullOrWhiteSpace(sessao.Descricao))
+                                        {
+                                            <div class="text-muted" style="font-size:0.75rem">@sessao.Descricao</div>
+                                        }
+                                        @if (blocoVinculado != null)
+                                        {
+                                            <div class="text-muted" style="font-size:0.72rem">
+                                                <i class="bi bi-calendar2 me-1"></i>@blocoVinculado.Data.ToString("dd/MM/yyyy")
+                                                · @blocoVinculado.HoraInicio
+                                                <span class="badge bg-@DiasHelper.ClasseStatusBloco(blocoVinculado.Status) ms-1"
+                                                      style="font-size:0.65rem">
+                                                    @DiasHelper.LabelStatusBloco(blocoVinculado.Status)
+                                                </span>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    @if (p.Status == StatusProjeto.Pausado)
+                    {
+                        <div class="alert alert-warning mt-3 mb-0 d-flex align-items-center gap-2">
+                            <i class="bi bi-pause-circle-fill"></i>
+                            <div>
+                                Projeto pausado — blocos futuros foram removidos da fila.
+                                <form method="post" asp-page-handler="Retomar" class="d-inline ms-2">
+                                    <input type="hidden" name="id" value="@p.Id" />
+                                    <button type="submit" class="btn btn-sm btn-warning">
+                                        <i class="bi bi-play-fill me-1"></i>Retomar e reagendar
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
 
     <!-- Checklist -->
     <div class="col-lg-5">
@@ -231,14 +362,17 @@
         @if (Model.BloquesVinculados.Any())
         {
             <div class="card border-0 shadow-sm">
-                <div class="card-header"><i class="bi bi-hourglass-split me-2"></i>Blocos de Estudo Vinculados</div>
-                <div class="card-body p-0">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-hourglass-split me-2"></i>Histórico de Blocos</span>
+                    <span class="badge bg-secondary">@Model.BloquesVinculados.Count</span>
+                </div>
+                <div class="card-body p-0" style="max-height:320px;overflow-y:auto">
                     <ul class="list-group list-group-flush">
                         @foreach (var b in Model.BloquesVinculados)
                         {
                             <li class="list-group-item d-flex justify-content-between align-items-center py-2">
                                 <div>
-                                    <div class="small fw-semibold">@b.Data.ToString("dd/MM") — @b.HoraInicio–@b.HoraFim</div>
+                                    <div class="small fw-semibold">@b.Data.ToString("dd/MM/yyyy") · @b.HoraInicio–@b.HoraFim</div>
                                     <div class="text-muted small">@b.Titulo</div>
                                 </div>
                                 <span class="badge bg-@DiasHelper.ClasseStatusBloco(b.Status)">

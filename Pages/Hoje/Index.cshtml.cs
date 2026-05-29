@@ -127,11 +127,12 @@ public class IndexModel : PageModel
 
             foreach (var ativo in blocosAtivos)
             {
-                ativo.Status = StatusBloco.Agendado;
-                ativo.IniciadoEm = null;
-                ativo.SegundosPausados = 0;
-                ativo.SegundosGastos = null;
-                ativo.PausadoEm = null;
+                if (ativo.Status == StatusBloco.EmAndamento)
+                {
+                    ativo.Status = StatusBloco.Pausado;
+                    ativo.PausadoEm = DateTime.Now;
+                }
+                // Blocos já Pausados ficam intocados para poder retomar depois
             }
 
             var duracao = CalcularDuracao(bloco.HoraInicio, bloco.HoraFim);

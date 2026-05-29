@@ -1,5 +1,6 @@
 using System.Text.Json;
 using CadernoVivo.Data;
+using CadernoVivo.Helpers;
 using CadernoVivo.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -90,11 +91,34 @@ public class IndexModel : PageModel
     public async Task<IActionResult> OnPostMudarStatusAsync(int id, StatusProjeto status)
     {
         var p = await _db.Projetos.FindAsync(id);
-        if (p != null)
+        if (p == null) return RedirectToPage();
+
+        var statusAnterior = p.Status;
+        p.Status = status;
+
+        if (p.TemCronograma)
         {
-            p.Status = status;
-            await _db.SaveChangesAsync();
+            if (status == StatusProjeto.Pausado)
+            {
+                // Remove blocos futuros agendados ao pausar
+                var futuros = await _db.BloquesEstudo
+                    .Where(b => b.ProjetoId == id &&
+                                b.Status == StatusBloco.Agendado &&
+                                b.Data >= DateTime.Today)
+                    .ToListAsync();
+                _db.BloquesEstudo.RemoveRange(futuros);
+            }
+            else if (status == StatusProjeto.EmAndamento &&
+                     statusAnterior == StatusProjeto.Pausado)
+            {
+                // Retomada: reagenda todas as sessões restantes
+                var cronograma = p.Cronograma;
+                if (cronograma != null)
+                    await CronogramaHelper.AgendarSessoes(_db, p, cronograma);
+            }
         }
+
+        await _db.SaveChangesAsync();
         return RedirectToPage();
     }
 

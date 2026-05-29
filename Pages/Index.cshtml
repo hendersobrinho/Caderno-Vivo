@@ -148,26 +148,26 @@
                                         }
                                     </div>
                                 </a>
-                                <div class="d-flex gap-1 flex-wrap justify-content-end">
+                                <div class="db-overdue-actions">
                                     <form method="post" asp-page-handler="AdiarBloco">
                                         <input type="hidden" name="id" value="@bloco.Id" />
                                         <input type="hidden" name="destino" value="amanha" />
-                                        <button class="btn btn-sm btn-outline-primary" type="submit">
-                                            Amanhã
+                                        <button class="btn btn-xs btn-outline-primary" type="submit" title="Adiar para amanhã">
+                                            <i class="bi bi-calendar-arrow-down"></i>amanhã
                                         </button>
                                     </form>
                                     <form method="post" asp-page-handler="AdiarBloco">
                                         <input type="hidden" name="id" value="@bloco.Id" />
                                         <input type="hidden" name="destino" value="sabado" />
-                                        <button class="btn btn-sm btn-outline-secondary" type="submit">
-                                            Sábado
+                                        <button class="btn btn-xs btn-outline-secondary" type="submit" title="Adiar para sábado">
+                                            <i class="bi bi-calendar-week"></i>sábado
                                         </button>
                                     </form>
                                     <form method="post" asp-page-handler="MarcarNaoFeito"
                                           onsubmit="return confirm('Marcar este bloco como não feito?')">
                                         <input type="hidden" name="id" value="@bloco.Id" />
-                                        <button class="btn btn-sm btn-outline-danger" type="submit">
-                                            Não feito
+                                        <button class="btn btn-xs btn-outline-danger" type="submit" title="Marcar não feito">
+                                            <i class="bi bi-x-circle"></i>
                                         </button>
                                     </form>
                                 </div>
@@ -194,13 +194,22 @@
                 }
                 else
                 {
-                    <div class="timeline-mini">
+                    <div class="db-next-list">
                         @foreach (var bloco in Model.ProximosBlocos)
                         {
-                            <a asp-page="/Hoje/Index" class="timeline-mini-item text-decoration-none">
-                                <span class="time">@bloco.Data.ToString("dd/MM") · @bloco.HoraInicio</span>
-                                <span class="title">@bloco.Titulo</span>
-                                <span class="badge bg-@DiasHelper.ClasseStatusBloco(bloco.Status)">
+                            <a asp-page="/Hoje/Index" class="db-next-row text-decoration-none">
+                                <div class="db-next-time">
+                                    <span>@bloco.Data.ToString("dd/MM")</span>
+                                    <strong>@bloco.HoraInicio</strong>
+                                </div>
+                                <div class="db-next-body">
+                                    <span class="db-next-title">@bloco.Titulo</span>
+                                    @if (bloco.Materia != null)
+                                    {
+                                        <span class="db-next-sub">@bloco.Materia.Nome</span>
+                                    }
+                                </div>
+                                <span class="badge bg-@DiasHelper.ClasseStatusBloco(bloco.Status) db-next-badge">
                                     @DiasHelper.LabelStatusBloco(bloco.Status)
                                 </span>
                             </a>
@@ -280,29 +289,24 @@
                             var dias = projeto.DiasRestantes;
                             <a asp-page="/Projetos/Detalhes" asp-route-id="@projeto.Id"
                                class="project-focus-row text-decoration-none">
-                                <div>
+                                <div class="project-focus-info">
                                     <div class="fw-semibold">@projeto.Titulo</div>
-                                    <small>
+                                    <small class="text-muted">
                                         @if (projeto.DataLimite.HasValue)
                                         {
                                             <span>@projeto.DataLimite.Value.ToString("dd/MM") · @DiasHelper.LabelCountdown(dias)</span>
                                         }
-                                        else
-                                        {
-                                            <span>Sem prazo</span>
-                                        }
-                                        @if (projeto.Materia != null)
-                                        {
-                                            <span> · @projeto.Materia.Nome</span>
-                                        }
+                                        else { <span>Sem prazo</span> }
+                                        @if (projeto.Materia != null) { <span> · @projeto.Materia.Nome</span> }
                                     </small>
-                                </div>
-                                <div class="project-focus-progress">
-                                    <span>@feitos/@total</span>
-                                    <div class="progress">
-                                        <div class="progress-bar" style="width:@progresso%"></div>
+                                    <div class="project-focus-bar mt-1">
+                                        <div class="progress" style="height:5px;flex:1">
+                                            <div class="progress-bar" style="width:@progresso%"></div>
+                                        </div>
+                                        <span class="project-focus-pct">@(total > 0 ? $"{feitos}/{total}" : "—")</span>
                                     </div>
                                 </div>
+                                <span class="project-focus-pct-big">@progresso<small>%</small></span>
                             </a>
                         }
                     </div>

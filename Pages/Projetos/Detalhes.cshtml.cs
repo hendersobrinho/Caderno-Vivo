@@ -1,5 +1,6 @@
 using System.Text.Json;
 using CadernoVivo.Data;
+using CadernoVivo.Helpers;
 using CadernoVivo.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -15,6 +16,7 @@ public class DetalhesModel : PageModel
     public Projeto Projeto { get; set; } = null!;
     public List<Materia> Materias { get; set; } = [];
     public List<BlocoEstudo> BloquesVinculados { get; set; } = [];
+    public int SessoesConcluidas { get; set; }
 
     [BindProperty] public Projeto ProjetoEdit { get; set; } = new();
     [BindProperty] public string? ChecklistTexto { get; set; }
@@ -30,8 +32,9 @@ public class DetalhesModel : PageModel
         BloquesVinculados = await _db.BloquesEstudo
             .Where(b => b.ProjetoId == id)
             .OrderByDescending(b => b.Data)
-            .Take(10)
             .ToListAsync();
+        SessoesConcluidas = BloquesVinculados.Count(b =>
+            b.Status == StatusBloco.Concluido || b.Status == StatusBloco.Parcial);
         return Page();
     }
 
@@ -39,6 +42,8 @@ public class DetalhesModel : PageModel
     {
         var p = await _db.Projetos.FindAsync(id);
         if (p == null) return NotFound();
+
+        var statusAnterior = p.Status;
 
         p.Titulo = ProjetoEdit.Titulo;
         p.Descricao = ProjetoEdit.Descricao;
@@ -48,10 +53,73 @@ public class DetalhesModel : PageModel
         p.Categoria = ProjetoEdit.Categoria;
         p.MateriaId = ProjetoEdit.MateriaId;
         p.Observacoes = ProjetoEdit.Observacoes;
-        // checklist é gerenciado pelos handlers ToggleItem/AddItem/RemoveItem
+
+        if (p.TemCronograma && statusAnterior != p.Status)
+        {
+            if (p.Status == StatusProjeto.Pausado)
+            {
+                var futuros = await _db.BloquesEstudo
+                    .Where(b => b.ProjetoId == id &&
+                                b.Status == StatusBloco.Agendado &&
+                                b.Data >= DateTime.Today)
+                    .ToListAsync();
+                _db.BloquesEstudo.RemoveRange(futuros);
+            }
+            else if (p.Status == StatusProjeto.EmAndamento &&
+                     statusAnterior == StatusProjeto.Pausado)
+            {
+                var cronograma = p.Cronograma;
+                if (cronograma != null)
+                    await CronogramaHelper.AgendarSessoes(_db, p, cronograma);
+            }
+        }
 
         await _db.SaveChangesAsync();
         TempData["Sucesso"] = "Projeto atualizado.";
+        return RedirectToPage(new { id });
+    }
+
+    public async Task<IActionResult> OnPostPausarAsync(int id)
+    {
+        var p = await _db.Projetos.FindAsync(id);
+        if (p == null) return NotFound();
+
+        p.Status = StatusProjeto.Pausado;
+
+        if (p.TemCronograma)
+        {
+            var futuros = await _db.BloquesEstudo
+                .Where(b => b.ProjetoId == id &&
+                            b.Status == StatusBloco.Agendado &&
+                            b.Data >= DateTime.Today)
+                .ToListAsync();
+            _db.BloquesEstudo.RemoveRange(futuros);
+        }
+
+        await _db.SaveChangesAsync();
+        TempData["Sucesso"] = "Projeto pausado. Blocos futuros removidos da fila.";
+        return RedirectToPage(new { id });
+    }
+
+    public async Task<IActionResult> OnPostRetomarAsync(int id)
+    {
+        var p = await _db.Projetos.FindAsync(id);
+        if (p == null) return NotFound();
+
+        p.Status = StatusProjeto.EmAndamento;
+
+        int agendadas = 0;
+        if (p.TemCronograma)
+        {
+            var cronograma = p.Cronograma;
+            if (cronograma != null)
+                agendadas = await CronogramaHelper.AgendarSessoes(_db, p, cronograma);
+        }
+
+        await _db.SaveChangesAsync();
+        TempData["Sucesso"] = agendadas > 0
+            ? $"Projeto retomado. {agendadas} sessão(ões) reagendadas a partir de amanhã."
+            : "Projeto retomado.";
         return RedirectToPage(new { id });
     }
 

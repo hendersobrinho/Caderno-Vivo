@@ -38,6 +38,9 @@ public class Projeto
     // JSON: [{"t":"texto","f":false}, ...]
     public string? ChecklistJson { get; set; }
 
+    // JSON: CronogramaProjeto — recorrência + lista de sessões
+    public string? CronogramaJson { get; set; }
+
     public DateTime DataCriacao { get; set; } = DateTime.Now;
 
     // Não persistidos — calculados em memória
@@ -56,6 +59,20 @@ public class Projeto
             catch { return []; }
         }
     }
+
+    [NotMapped]
+    public CronogramaProjeto? Cronograma
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(CronogramaJson)) return null;
+            try { return JsonSerializer.Deserialize<CronogramaProjeto>(CronogramaJson); }
+            catch { return null; }
+        }
+    }
+
+    [NotMapped]
+    public bool TemCronograma => !string.IsNullOrWhiteSpace(CronogramaJson);
 }
 
 public class ChecklistItem
