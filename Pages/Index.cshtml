@@ -97,7 +97,7 @@
     <div class="metric-card warning">
         <span>Depois do prazo</span>
         <strong>@Model.ConcluidosDepoisPrazo</strong>
-        <small>feito(s), mas fora da janela</small>
+        <small>feito(s) fora da janela esta semana</small>
     </div>
     <div class="metric-card dark">
         <span>Hora extra</span>
@@ -107,13 +107,13 @@
     <div class="metric-card">
         <span>Média por bloco</span>
         <strong>@Model.MediaMinutosPorBloco min</strong>
-        <small>tempo médio real por atividade concluída</small>
+        <small>tempo médio real — histórico todo</small>
     </div>
 </div>
 
-<div class="dashboard-main-grid mb-4 @(Model.BlocosAtrasados.Any() ? "has-alerts" : "clean")">
-    <div class="dashboard-alert-slot">
-        <div class="card dashboard-panel attention-card @(Model.BlocosAtrasados.Any() ? "" : "compact-ok")">
+<div class="row g-3 mb-4">
+    <div class="col-lg-7">
+        <div class="card dashboard-panel h-100 attention-card @(Model.BlocosAtrasados.Any() ? "" : "compact-ok")">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <span><i class="bi bi-hourglass-split me-2 text-danger"></i>Atenção agora</span>
                 @if (Model.TotalBlocosAtrasados > 0)
@@ -141,32 +141,29 @@
                                    class="text-decoration-none text-reset flex-grow-1 min-w-0">
                                     <div class="fw-semibold">@bloco.Titulo</div>
                                     <div class="dash-muted small">
-                                        @bloco.Data.ToString("dd/MM") · @bloco.HoraInicio-@bloco.HoraFim
-                                        @if (bloco.Materia != null)
-                                        {
-                                            <span> · @bloco.Materia.Nome</span>
-                                        }
+                                        @bloco.Data.ToString("dd/MM") · @bloco.HoraInicio–@bloco.HoraFim
+                                        @if (bloco.Materia != null) { <span> · @bloco.Materia.Nome</span> }
                                     </div>
                                 </a>
                                 <div class="db-overdue-actions">
                                     <form method="post" asp-page-handler="AdiarBloco">
                                         <input type="hidden" name="id" value="@bloco.Id" />
                                         <input type="hidden" name="destino" value="amanha" />
-                                        <button class="btn btn-xs btn-outline-primary" type="submit" title="Adiar para amanhã">
+                                        <button class="btn btn-xs btn-outline-primary" type="submit">
                                             <i class="bi bi-calendar-arrow-down"></i>amanhã
                                         </button>
                                     </form>
                                     <form method="post" asp-page-handler="AdiarBloco">
                                         <input type="hidden" name="id" value="@bloco.Id" />
                                         <input type="hidden" name="destino" value="sabado" />
-                                        <button class="btn btn-xs btn-outline-secondary" type="submit" title="Adiar para sábado">
-                                            <i class="bi bi-calendar-week"></i>sábado
+                                        <button class="btn btn-xs btn-outline-secondary" type="submit">
+                                            <i class="bi bi-calendar-week"></i>sáb
                                         </button>
                                     </form>
                                     <form method="post" asp-page-handler="MarcarNaoFeito"
-                                          onsubmit="return confirm('Marcar este bloco como não feito?')">
+                                          onsubmit="return confirm('Marcar como não feito?')">
                                         <input type="hidden" name="id" value="@bloco.Id" />
-                                        <button class="btn btn-xs btn-outline-danger" type="submit" title="Marcar não feito">
+                                        <button class="btn btn-xs btn-outline-danger" type="submit">
                                             <i class="bi bi-x-circle"></i>
                                         </button>
                                     </form>
@@ -179,7 +176,94 @@
         </div>
     </div>
 
-    <div class="dashboard-next-slot">
+    <div class="col-lg-5">
+        <div class="card dashboard-panel h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-kanban me-2 text-primary"></i>Projetos em foco</span>
+                <a asp-page="/Projetos/Index" class="btn btn-sm btn-outline-primary">Ver todos</a>
+            </div>
+            <div class="card-body p-0">
+                @if (!Model.ProjetosUrgentes.Any())
+                {
+                    <div class="empty-panel">
+                        <i class="bi bi-kanban"></i>
+                        <span>Nenhum projeto ativo.</span>
+                    </div>
+                }
+                else
+                {
+                    <div class="project-focus-list">
+                        @foreach (var projeto in Model.ProjetosUrgentes)
+                        {
+                            var checklist = projeto.Checklist;
+                            var feitos = checklist.Count(i => i.Feito);
+                            var total = checklist.Count;
+                            var progresso = total == 0 ? 0 : (int)Math.Round((double)feitos / total * 100);
+                            var dias = projeto.DiasRestantes;
+                            <a asp-page="/Projetos/Detalhes" asp-route-id="@projeto.Id"
+                               class="project-focus-row text-decoration-none">
+                                <div class="project-focus-info">
+                                    <div class="fw-semibold">@projeto.Titulo</div>
+                                    <small class="text-muted">
+                                        @if (projeto.DataLimite.HasValue)
+                                        { <span>@projeto.DataLimite.Value.ToString("dd/MM") · @DiasHelper.LabelCountdown(dias)</span> }
+                                        else { <span>Sem prazo</span> }
+                                        @if (projeto.Materia != null) { <span> · @projeto.Materia.Nome</span> }
+                                    </small>
+                                    <div class="project-focus-bar mt-1">
+                                        <div class="progress" style="height:5px;flex:1">
+                                            <div class="progress-bar" style="width:@progresso%"></div>
+                                        </div>
+                                        <span class="project-focus-pct">@(total > 0 ? $"{feitos}/{total}" : "—")</span>
+                                    </div>
+                                </div>
+                                <span class="project-focus-pct-big">@progresso<small>%</small></span>
+                            </a>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card dashboard-panel mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-pin-angle-fill me-2 text-primary"></i>Lembretes importantes</span>
+        <a asp-page="/Lembretes/Index" class="btn btn-sm btn-outline-primary">Abrir lembretes</a>
+    </div>
+    <div class="card-body p-0">
+        @if (!Model.LembretesImportantes.Any())
+        {
+            <div class="empty-panel compact">
+                <i class="bi bi-check2-circle"></i>
+                <span>Nenhum lembrete aberto.</span>
+            </div>
+        }
+        else
+        {
+            <div class="dashboard-reminders">
+                @foreach (var lembrete in Model.LembretesImportantes)
+                {
+                    <a asp-page="/Lembretes/Index" class="dashboard-reminder-item text-decoration-none">
+                        <span class="badge bg-@DiasHelper.ClasseCountdown(lembrete.DiasRestantes)">
+                            @DiasHelper.LabelCountdown(lembrete.DiasRestantes)
+                        </span>
+                        <strong>@lembrete.Titulo</strong>
+                        <small>
+                            @DiasHelper.LabelEscopoLembrete(lembrete.Escopo)
+                            @if (lembrete.Materia != null) { <span> · @lembrete.Materia.Nome</span> }
+                            @if (lembrete.Projeto != null) { <span> · @lembrete.Projeto.Titulo</span> }
+                        </small>
+                    </a>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-5">
         <div class="card dashboard-panel h-100">
             <div class="card-header">
                 <i class="bi bi-arrow-right-circle me-2 text-primary"></i>Próximos blocos
@@ -219,111 +303,19 @@
             </div>
         </div>
     </div>
-</div>
 
-<div class="card dashboard-panel mb-4">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <span><i class="bi bi-pin-angle-fill me-2 text-primary"></i>Lembretes importantes</span>
-        <a asp-page="/Lembretes/Index" class="btn btn-sm btn-outline-primary">Abrir lembretes</a>
-    </div>
-    <div class="card-body p-0">
-        @if (!Model.LembretesImportantes.Any())
-        {
-            <div class="empty-panel compact">
-                <i class="bi bi-check2-circle"></i>
-                <span>Nenhum lembrete aberto.</span>
-            </div>
-        }
-        else
-        {
-            <div class="dashboard-reminders">
-                @foreach (var lembrete in Model.LembretesImportantes)
-                {
-                    <a asp-page="/Lembretes/Index" class="dashboard-reminder-item text-decoration-none">
-                        <span class="badge bg-@DiasHelper.ClasseCountdown(lembrete.DiasRestantes)">
-                            @DiasHelper.LabelCountdown(lembrete.DiasRestantes)
-                        </span>
-                        <strong>@lembrete.Titulo</strong>
-                        <small>
-                            @DiasHelper.LabelEscopoLembrete(lembrete.Escopo)
-                            @if (lembrete.Materia != null)
-                            {
-                                <span> · @lembrete.Materia.Nome</span>
-                            }
-                            @if (lembrete.Projeto != null)
-                            {
-                                <span> · @lembrete.Projeto.Titulo</span>
-                            }
-                        </small>
-                    </a>
-                }
-            </div>
-        }
-    </div>
-</div>
-
-<div class="row g-3">
-    <div class="col-lg-6">
-        <div class="card dashboard-panel">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <span><i class="bi bi-kanban me-2 text-primary"></i>Projetos em foco</span>
-                <a asp-page="/Projetos/Index" class="btn btn-sm btn-outline-primary">Ver projetos</a>
-            </div>
-            <div class="card-body p-0">
-                @if (!Model.ProjetosUrgentes.Any())
-                {
-                    <div class="empty-panel">
-                        <i class="bi bi-kanban"></i>
-                        <span>Nenhum projeto ativo no momento.</span>
-                    </div>
-                }
-                else
-                {
-                    <div class="project-focus-list">
-                        @foreach (var projeto in Model.ProjetosUrgentes)
-                        {
-                            var checklist = projeto.Checklist;
-                            var feitos = checklist.Count(i => i.Feito);
-                            var total = checklist.Count;
-                            var progresso = total == 0 ? 0 : (int)Math.Round((double)feitos / total * 100);
-                            var dias = projeto.DiasRestantes;
-                            <a asp-page="/Projetos/Detalhes" asp-route-id="@projeto.Id"
-                               class="project-focus-row text-decoration-none">
-                                <div class="project-focus-info">
-                                    <div class="fw-semibold">@projeto.Titulo</div>
-                                    <small class="text-muted">
-                                        @if (projeto.DataLimite.HasValue)
-                                        {
-                                            <span>@projeto.DataLimite.Value.ToString("dd/MM") · @DiasHelper.LabelCountdown(dias)</span>
-                                        }
-                                        else { <span>Sem prazo</span> }
-                                        @if (projeto.Materia != null) { <span> · @projeto.Materia.Nome</span> }
-                                    </small>
-                                    <div class="project-focus-bar mt-1">
-                                        <div class="progress" style="height:5px;flex:1">
-                                            <div class="progress-bar" style="width:@progresso%"></div>
-                                        </div>
-                                        <span class="project-focus-pct">@(total > 0 ? $"{feitos}/{total}" : "—")</span>
-                                    </div>
-                                </div>
-                                <span class="project-focus-pct-big">@progresso<small>%</small></span>
-                            </a>
-                        }
-                    </div>
-                }
-            </div>
-        </div>
-    </div>
-
-    <div class="col-lg-6">
-        <div class="card dashboard-panel">
+    <div class="col-lg-7">
+        <div class="card dashboard-panel h-100">
             <div class="card-header">
                 <i class="bi bi-sticky me-2 text-warning"></i>Observações recentes
             </div>
-            <div class="card-body">
+            <div class="card-body p-0">
                 @if (!Model.ObservacoesRecentes.Any())
                 {
-                    <div class="dash-muted small">Nada anotado ainda. As observações feitas ao finalizar blocos aparecem aqui.</div>
+                    <div class="empty-panel">
+                        <i class="bi bi-sticky"></i>
+                        <span>Nada anotado ainda.</span>
+                    </div>
                 }
                 else
                 {
@@ -335,14 +327,8 @@
                                     <div class="fw-semibold small">@bloco.Titulo</div>
                                     <small class="text-muted">
                                         @bloco.Data.ToString("dd/MM") · @bloco.HoraInicio
-                                        @if (bloco.Materia != null)
-                                        {
-                                            <span> · @bloco.Materia.Nome</span>
-                                        }
-                                        @if (bloco.Projeto != null)
-                                        {
-                                            <span> · @bloco.Projeto.Titulo</span>
-                                        }
+                                        @if (bloco.Materia != null) { <span> · @bloco.Materia.Nome</span> }
+                                        @if (bloco.Projeto != null) { <span> · @bloco.Projeto.Titulo</span> }
                                     </small>
                                     <div class="small mt-1">
                                         @(bloco.Observacao ?? bloco.ProximoPasso ?? bloco.OndeParei ?? bloco.Duvidas)

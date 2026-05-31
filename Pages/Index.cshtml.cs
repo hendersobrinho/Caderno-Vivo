@@ -167,10 +167,13 @@ public class IndexModel : PageModel
         HorasExtrasFeitas = BlocosSemana.Count(TemHoraExtra);
         MinutosExtrasFeitos = BlocosSemana.Sum(CalcularMinutosExtras);
 
-        var concluidosSemana = BlocosSemana.Where(b => b.Status == StatusBloco.Concluido).ToList();
-        MediaMinutosPorBloco = concluidosSemana.Count == 0
+        // Média usa todo o histórico, não só a semana
+        var concluidosTodos = await _db.BloquesEstudo
+            .Where(b => b.Status == StatusBloco.Concluido)
+            .ToListAsync();
+        MediaMinutosPorBloco = concluidosTodos.Count == 0
             ? 0
-            : (int)Math.Round(concluidosSemana.Average(b => (double)CalcularMinutosGastos(b)));
+            : (int)Math.Round(concluidosTodos.Average(b => (double)CalcularMinutosGastos(b)));
 
         ProgressoSemana = BlocosSemanaTotal == 0
             ? 0

@@ -694,7 +694,7 @@ function setStatus(status, btn) {
             atualizarEstadoFlutuante('is-finished');
             if (!notifFim) {
                 notifFim = true;
-                notificar('Bloco encerrado', 'O tempo do bloco atual acabou.');
+                agendarAlarmePendente('Bloco encerrado', 'O tempo do bloco atual acabou.');
             }
             return;
         }
@@ -711,6 +711,22 @@ function setStatus(status, btn) {
     tick();
     setInterval(tick, 1000);
 })();
+
+// ===== ALARME PENDENTE (dispara na 1ª interação quando áudio está bloqueado) =====
+var _alarmePendente = null;
+
+function agendarAlarmePendente(titulo, corpo) {
+    var ctx = getAudioCtx();
+    // Se o contexto já estiver ativo, dispara agora mesmo
+    if (ctx && ctx.state === 'running') {
+        notificar(titulo, corpo);
+        return;
+    }
+    // Caso contrário, guarda para disparar quando o usuário interagir
+    _alarmePendente = { titulo: titulo, corpo: corpo };
+    // Mostra o toast visual imediatamente (sem som por enquanto)
+    mostrarToast(titulo, corpo);
+}
 
 // ===== WEB AUDIO =====
 var _audioCtx = null;
@@ -854,6 +870,12 @@ function dataHoraBloco(bloco) {
     return new Date(partesData[0], partesData[1] - 1, partesData[2], partesHora[0], partesHora[1], 0);
 }
 
+function dataHoraFimBloco(bloco) {
+    var partesData = bloco.data.split('-').map(Number);
+    var partesHora = bloco.fim.split(':').map(Number);
+    return new Date(partesData[0], partesData[1] - 1, partesData[2], partesHora[0], partesHora[1], 0);
+}
+
 function agendarAlertasDoDia() {
     limparAgendamentosDeAlerta();
     if (!alertasAtivos()) return;
@@ -868,6 +890,15 @@ function agendarAlertasDoDia() {
             return bloco.data === hojeKey && bloco.status !== 'Concluido' && bloco.status !== 'NaoFeito';
         })
         .forEach(function(bloco) {
+            // Bloco em andamento e já passou do horário de fim → alarme pendente
+            if (bloco.status === 'EmAndamento') {
+                var fim = dataHoraFimBloco(bloco);
+                if (fim < Date.now()) {
+                    agendarAlarmePendente('Bloco encerrado', bloco.titulo + ' passou do horário.');
+                }
+                return;
+            }
+
             var inicio = dataHoraBloco(bloco);
             var alerta = new Date(inicio.getTime() - 10 * 60 * 1000);
             var delay = alerta.getTime() - Date.now();
@@ -914,9 +945,14 @@ function alternarAlertas() {
 
 document.getElementById('btnAtivarAlertas')?.addEventListener('click', alternarAlertas);
 
-// Ajuda o navegador a liberar audio assim que houver qualquer interacao com a pagina.
+// Libera o audio e dispara alarme pendente na primeira interação.
 document.addEventListener('pointerdown', function() {
     getAudioCtx();
+    if (_alarmePendente) {
+        var a = _alarmePendente;
+        _alarmePendente = null;
+        setTimeout(function() { notificar(a.titulo, a.corpo); }, 300);
+    }
 }, { once: true });
 
 atualizarBotaoAlertas();
